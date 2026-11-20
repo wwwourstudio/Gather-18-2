@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, User } from 'firebase/auth';
 import {
   collection,
@@ -13,7 +13,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { ArrowUp, Mic, X } from 'lucide-react';
-import { AiMediaPodcastDrawer, AiPodcastTab } from './components/AiMediaPodcastDrawer';
+import type { AiPodcastTab } from './components/AiMediaPodcastDrawer';
 import { AudioMixerDrawer } from './components/AudioMixerDrawer';
 import { AuthModal } from './components/AuthModal';
 import { ComposerShareControl } from './components/ComposerShareControl';
@@ -35,7 +35,6 @@ import { StingerDeckDrawer } from './components/StingerDeckDrawer';
 import { BottomDock, RightRail, SceneDeck } from './components/StudioDock';
 import { TeleprompterOverlay } from './components/TeleprompterOverlay';
 import { TopBar } from './components/TopBar';
-import { WatchPageView } from './components/WatchPageView';
 import {
   DEFAULT_DESTINATIONS,
   DEFAULT_VIDEO_FX,
@@ -104,6 +103,23 @@ import {
 
 type AppViewMode = 'landing' | 'studio' | 'watch';
 
+// Heavy, route-level views are split out of the initial bundle.
+const WatchPageView = lazy(() =>
+  import('./components/WatchPageView').then((m) => ({ default: m.WatchPageView }))
+);
+const AiMediaPodcastDrawer = lazy(() =>
+  import('./components/AiMediaPodcastDrawer').then((m) => ({ default: m.AiMediaPodcastDrawer }))
+);
+
+const RouteLoading: React.FC<{ label: string }> = ({ label }) => (
+  <div className="flex-1 min-h-0 grid place-items-center" role="status" aria-live="polite">
+    <div className="flex flex-col items-center gap-3 text-[13px] text-[var(--ink-3)]">
+      <span className="w-6 h-6 rounded-full border-2 border-[var(--line-2)] border-t-[var(--accent)] animate-spin" aria-hidden="true" />
+      <span>{label}…</span>
+    </div>
+  </div>
+);
+
 interface ToastItem {
   id: string;
   text: string;
@@ -123,7 +139,13 @@ export default function App() {
   const [viewMode, setViewMode] = useState<AppViewMode>('landing');
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [clientRole, setClientRole] = useState<'host' | 'guest' | 'viewer'>('host');
-  const [displayName, setDisplayName] = useState('Maya Chen');
+  const [displayName, setDisplayName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('gather:displayName') || '';
+    } catch {
+      return '';
+    }
+  });
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [studioTitleInit, setStudioTitleInit] = useState('Gather Live Broadcast');
   const [studioFormatInit, setStudioFormatInit] = useState<WatchMode>('standard');
@@ -325,16 +347,19 @@ export default function App() {
         setGreenRoomIsNew(false);
         setGreenRoomOpen(true);
       } else if (rawHash === 'broadcast' || rawHash === 'watch') {
+        setStudioFormatInit('standard');
         setRoomCode('CAST01');
         setClientRole('viewer');
         setIsWatchPreview(false);
         setViewMode('watch');
       } else if (rawHash === 'gamer-arena' || rawHash === 'gamer') {
+        setStudioFormatInit('gamer');
         setRoomCode('GAMER1');
         setClientRole('viewer');
         setIsWatchPreview(false);
         setViewMode('watch');
       } else if (rawHash === 'live-shop' || rawHash === 'shop') {
+        setStudioFormatInit('shop');
         setRoomCode('SHOP01');
         setClientRole('viewer');
         setIsWatchPreview(false);
@@ -1536,6 +1561,11 @@ export default function App() {
     isHost: boolean;
   }) => {
     setDisplayName(payload.name);
+    try {
+      localStorage.setItem('gather:displayName', payload.name);
+    } catch {
+      // ignore storage failures
+    }
     setAvatarUrl(payload.avatarUrl);
     setMicOn(payload.micOn);
     setCamOn(payload.camOn);
@@ -2021,9 +2051,9 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen flex flex-col overflow-hidden ${
+      className={`h-[100dvh] flex flex-col overflow-hidden ${
         viewMode === 'studio'
-          ? 'bg-[var(--bg)] p-0 gap-0'
+          ? 'bg-[var(--bg)] gather-aurora-soft p-0 gap-0'
           : 'gather-backdrop p-2.5 gap-2.5'
       }`}
     >
@@ -2174,13 +2204,13 @@ export default function App() {
                     } as React.CSSProperties)
                   : undefined
               }
-              className={`flex-1 min-h-0 grid grid-cols-1 gap-0 ${
+              className={`flex-1 min-h-0 grid grid-cols-1 content-start lg:content-stretch gap-0 overflow-y-auto lg:overflow-hidden ${
                 panelOpen ? 'gather-studio-grid-open' : 'gather-studio-grid-closed'
               }`}
             >
               {/* Left Column: Stage Viewport + Hairline-Divided Scene Deck */}
-              <div className="min-w-0 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-0 relative">
-                <div className="relative min-h-0 flex flex-col gap-2.5 bg-[var(--bg-2)]/70 dark:bg-[#03060e] px-4 py-3 sm:px-6 sm:py-4">
+              <div className="min-w-0 lg:min-h-0 grid grid-rows-[auto_auto] lg:grid-rows-[minmax(0,1fr)_auto] gap-0 relative">
+                <div className="relative lg:min-h-0 flex flex-col gap-2.5 bg-[var(--bg-2)]/60 dark:bg-[#03060e]/70 px-4 py-3 sm:px-6 sm:py-4">
                   {/* Eye-Line Host-Only Teleprompter (Docked cleanly above stage, zero video overlap) */}
                   <TeleprompterOverlay
                     visible={teleprompterOpen}
@@ -2215,7 +2245,7 @@ export default function App() {
                     }}
                   />
 
-                  <div className="flex-1 min-h-0">
+                  <div className="gather-stage-halo h-[min(58vw,62vh)] lg:h-auto lg:flex-1 min-h-0">
                     <StageCanvas
                       room={activeRoom}
                       localClientId={clientId}
@@ -2569,7 +2599,7 @@ export default function App() {
               </div>
 
               {/* Middle Column: Fluid Percentage Side Console + Hairline Resize Handle */}
-              <div className={panelOpen ? 'relative min-h-0 flex w-full border-l border-[var(--line)] bg-[var(--bg-2)]/80' : 'hidden'}>
+              <div className={panelOpen ? 'relative h-[72vh] lg:h-auto min-h-0 flex w-full border-t lg:border-t-0 lg:border-l border-[var(--line)] bg-[var(--bg-2)]/80' : 'hidden'}>
                 <div
                   role="separator"
                   aria-orientation="vertical"
@@ -2873,6 +2903,7 @@ export default function App() {
         )}
 
       {viewMode === 'watch' && (
+        <Suspense fallback={<RouteLoading label="Loading watch page" />}>
         <WatchPageView
           room={
             !socket.roomState
@@ -2992,9 +3023,11 @@ export default function App() {
             }
           }}
         />
+        </Suspense>
       )}
 
       {aiMediaOpen && (
+        <Suspense fallback={null}>
         <AiMediaPodcastDrawer
           open={aiMediaOpen}
           initialTab={aiMediaTab}
@@ -3144,6 +3177,7 @@ export default function App() {
           onExportReplayClip={handleSaveReplayClip}
           onToast={addToast}
         />
+        </Suspense>
       )}
 
       <input

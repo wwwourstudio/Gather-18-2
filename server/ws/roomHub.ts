@@ -1,6 +1,6 @@
 import http from 'http';
 import { WebSocketServer } from 'ws';
-import { verifyFirebaseIdToken } from '../auth.ts';
+import { verifyFirebaseIdToken } from '../auth.js';
 import {
   advanceHypeTrain,
   broadcastRoomState,
@@ -11,13 +11,13 @@ import {
   rooms,
   roomSockets,
   sendToClient,
-} from '../roomStore.ts';
+} from '../roomStore.js';
 import {
   ClientMeta,
   roomHydrateSchema,
   roomJoinSchema,
   ServerRoomState,
-} from '../types.ts';
+} from '../types.js';
 
 function isAuthorizedHost(
   room: ServerRoomState,
@@ -76,8 +76,16 @@ export function attachWebSocketHub(server: http.Server) {
             const isViewerDemo =
               role === 'viewer' &&
               (roomCode === 'GAMER1' || roomCode === 'SHOP01' || roomCode === 'CAST01');
-            room = createDefaultRoom(roomCode, clientId, name, payload.watchMode, isViewerDemo);
-            if (payload.title && payload.title.trim()) {
+            const demoMode =
+              roomCode === 'GAMER1' ? 'gamer' : roomCode === 'SHOP01' ? 'shop' : roomCode === 'CAST01' ? 'standard' : null;
+            room = createDefaultRoom(
+              roomCode,
+              clientId,
+              name,
+              isViewerDemo && demoMode ? demoMode : payload.watchMode,
+              isViewerDemo
+            );
+            if (!isViewerDemo && payload.title && payload.title.trim()) {
               room.title = payload.title.trim().slice(0, 80);
             }
             if (role === 'host') {

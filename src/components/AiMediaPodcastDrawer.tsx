@@ -26,7 +26,6 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
-import { GatherLogo } from './GatherLogo';
 import {
   AiMotionBumperSpec,
   AiMusicSpec,
@@ -104,6 +103,118 @@ const DIRECTORY_LABELS: Record<
   youtube: { name: 'YouTube Music Podcasts', subtitle: 'RSS audio-to-episode ingestion' },
 };
 
+type AiToolGroup = 'Prepare' | 'Design' | 'Sound' | 'After the show';
+
+const AI_TOOL_GROUPS: AiToolGroup[] = ['Prepare', 'Design', 'Sound', 'After the show'];
+
+const AI_TOOLS: Array<{
+  id: AiPodcastTab;
+  group: AiToolGroup;
+  label: string;
+  hint: string;
+  description: string;
+  icon: React.ElementType;
+}> = [
+  {
+    id: 'pdf',
+    group: 'Prepare',
+    label: 'Slides & prompter',
+    hint: 'Talking points from a PDF',
+    description:
+      'Upload a slide deck and get talking points, lower thirds and a teleprompter script for every slide.',
+    icon: FileText,
+  },
+  {
+    id: 'graphics',
+    group: 'Design',
+    label: 'Stage graphics',
+    hint: 'Frames, backdrops, logos',
+    description:
+      'Describe a frame, backdrop, thumbnail or logo. Generate it, refine it in plain words, then put it on stage.',
+    icon: Layers,
+  },
+  {
+    id: 'kits',
+    group: 'Design',
+    label: 'Brand kits',
+    hint: 'A full look in one go',
+    description:
+      'Describe your channel once and get a matching palette, fonts, logo, backdrop, overlay and starter products.',
+    icon: Store,
+  },
+  {
+    id: 'audio',
+    group: 'Sound',
+    label: 'Voice & music',
+    hint: 'Intro drops and loops',
+    description:
+      'Turn a script into a voiced intro or promo, or generate a music loop. Both land in your stinger deck.',
+    icon: Music2,
+  },
+  {
+    id: 'bumper',
+    group: 'Sound',
+    label: 'Intro bumpers',
+    hint: 'Starting soon, BRB, alerts',
+    description:
+      'Animated Starting Soon, Be Right Back and alert videos, rendered in your browser and ready to play on stage.',
+    icon: Clapperboard,
+  },
+  {
+    id: 'clips',
+    group: 'After the show',
+    label: 'Highlight clips',
+    hint: 'Find the best moments',
+    description:
+      'Find the moments worth sharing from chat activity and your rundown, or drop in a video to play on stage.',
+    icon: Scissors,
+  },
+  {
+    id: 'podcast',
+    group: 'After the show',
+    label: 'Podcast',
+    hint: 'Record and publish audio',
+    description:
+      'Record the show as audio, publish episodes, and share one RSS feed with Spotify, Apple Podcasts and more.',
+    icon: Rss,
+  },
+];
+
+const KIT_EXAMPLES: Record<BrandKit['niche'], string[]> = {
+  gaming: ['Tactical FPS squad, neon cyan on black', 'Cozy farming-sim streamer, pastel greens'],
+  commerce: ['Small-batch ceramics, warm clay and cream', 'Streetwear drops, bold red and concrete grey'],
+  creator: ['Design teardown show, clean editorial monochrome', 'Cooking channel, sunny citrus palette'],
+  podcast: ['Tech interview podcast, deep navy and brass', 'True-crime audio show, noir with one red accent'],
+};
+
+// Tools that call the AI endpoints; the podcast feed and clip uploads work without a key.
+const AI_POWERED_TOOLS = new Set<AiPodcastTab>(['pdf', 'graphics', 'kits', 'audio', 'bumper', 'clips']);
+
+type AiStatus = 'checking' | 'ready' | 'missing-key' | 'offline';
+
+const AiStatusPill: React.FC<{ status: AiStatus }> = ({ status }) => {
+  const map: Record<AiStatus, { label: string; dot: string; title: string }> = {
+    checking: { label: 'Checking AI', dot: 'bg-[var(--ink-3)] animate-pulse', title: 'Checking the AI service…' },
+    ready: { label: 'AI ready', dot: 'bg-[var(--ok)]', title: 'AI generation is available.' },
+    'missing-key': {
+      label: 'AI not set up',
+      dot: 'bg-[var(--warn)]',
+      title: 'The server has no GEMINI_API_KEY, so AI generation is unavailable.',
+    },
+    offline: { label: 'AI offline', dot: 'bg-[var(--danger)]', title: 'The AI service could not be reached.' },
+  };
+  const m = map[status];
+  return (
+    <span
+      title={m.title}
+      className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-[var(--line-2)] bg-[var(--fill)] text-[11.5px] font-medium text-[var(--ink-2)] whitespace-nowrap"
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} aria-hidden="true" />
+      {m.label}
+    </span>
+  );
+};
+
 function formatSec(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
@@ -156,9 +267,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
 
   // Tab 3: AI Brand Kits & Store Builder
   const [kitNiche, setKitNiche] = useState<BrandKit['niche']>('gaming');
-  const [kitConcept, setKitConcept] = useState(
-    'Neon Apex Valorant & creator desk gear brand with obsidian obsidian chrome hardware drops'
-  );
+  const [kitConcept, setKitConcept] = useState('');
   const [kitLoading, setKitLoading] = useState(false);
   const [kitError, setKitError] = useState<string | null>(null);
   const [draftKit, setDraftKit] = useState<BrandKit | null>(null);
@@ -230,6 +339,32 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
       setTab(initialTab);
     }
   }, [open, initialTab]);
+
+  const [aiStatus, setAiStatus] = useState<AiStatus>('checking');
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch('/api/health')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((h: { ai?: boolean }) => {
+        if (!cancelled) setAiStatus(h.ai ? 'ready' : 'missing-key');
+      })
+      .catch(() => {
+        if (!cancelled) setAiStatus('offline');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -386,7 +521,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
       setGraphicSvg(cleanSvg);
       setGraphicPreviewUrl(svgToCompactDataUrl(cleanSvg));
       setGraphicRefinePrompt('');
-      onToast('Refined stage graphic with Gemini.');
+      onToast('Graphic refined.');
     } catch (err) {
       setGraphicError(err instanceof Error ? err.message : 'Vector refinement failed.');
     } finally {
@@ -843,79 +978,133 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
   const inputCls =
     'h-9 rounded-[9px] bg-[var(--fill)] border border-[var(--line-2)] px-3 text-[12px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:border-[var(--accent)]';
 
+  const activeTool = AI_TOOLS.find((t) => t.id === tab) || AI_TOOLS[0];
+  const ActiveIcon = activeTool.icon;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 gather-lightbox-scrim animate-gather-backdrop"
+      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4 gather-lightbox-scrim animate-gather-backdrop"
       onClick={onClose}
+      role="presentation"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-[94%] max-w-[980px] max-h-[88vh] flex flex-col rounded-[18px] gather-glass-elevated animate-gather-modal overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-studio-title"
+        className="w-full sm:w-[96%] max-w-[1180px] h-full sm:h-[min(860px,92vh)] flex flex-col sm:rounded-[18px] gather-glass-elevated animate-gather-modal overflow-hidden"
       >
-        {/* Header — unified opaque elevated header */}
-        <div
-          className="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[var(--line)] shrink-0"
+        {/* Header */}
+        <header
+          className="flex items-center justify-between gap-4 px-4 sm:px-5 h-14 border-b border-[var(--line)] shrink-0"
           style={{ backgroundColor: 'var(--elevated-header)' }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <GatherLogo size={22} />
+            <span className="w-8 h-8 rounded-[9px] bg-[var(--accent-soft)] border border-[var(--accent-line)] grid place-items-center shrink-0">
+              <Wand2 className="w-4 h-4 text-[var(--accent-text)]" strokeWidth={1.75} aria-hidden="true" />
+            </span>
             <div className="min-w-0">
-              <h2 className="font-display text-[15px] font-medium tracking-tight text-[var(--ink)] truncate">
-                Google AI Creative Studio &amp; Podcast Hub
+              <h2
+                id="ai-studio-title"
+                className="font-display text-[15.5px] font-medium tracking-tight text-[var(--ink)] truncate"
+              >
+                AI Studio
               </h2>
-              <p className="text-[11px] text-[var(--ink-3)] truncate">
-                Gaming HUDs, Store Brand Kits, Gemini 3.8 TTS stingers, synth music loops, kinetic bumpers &amp; RSS
+              <p className="text-[11.5px] text-[var(--ink-3)] truncate">
+                Create graphics, sound and show assets for {room.title || 'your show'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-8 w-8 grid place-items-center rounded-[8px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors cursor-pointer shrink-0"
-            aria-label="Close AI Media Studio"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Segmented Navigation — native .gather-seg control */}
-        <div
-          className="px-5 py-2.5 border-b border-[var(--line)] flex items-center justify-between gap-3 overflow-x-auto gather-scroll shrink-0"
-          style={{ backgroundColor: 'var(--elevated-rail)' }}
-        >
-          <div className="gather-seg" role="tablist" aria-label="AI Media tools">
-            {(
-              [
-                { id: 'pdf', label: 'PDF & Prompter', icon: FileText },
-                { id: 'graphics', label: 'HUDs & Art', icon: Layers },
-                { id: 'kits', label: 'Brand Kits', icon: Store },
-                { id: 'audio', label: 'Voice & Music', icon: Music2 },
-                { id: 'bumper', label: 'Bumpers', icon: Clapperboard },
-                { id: 'clips', label: 'Magic Clips', icon: Scissors },
-                { id: 'podcast', label: 'Podcast RSS', icon: Rss },
-              ] as const
-            ).map((item) => {
-              const Icon = item.icon;
-              const active = tab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setTab(item.id)}
-                  className={`gather-seg-btn ${active ? 'active' : ''}`}
-                >
-                  <Icon className="w-3.5 h-3.5 text-[var(--accent-text)]" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2 shrink-0">
+            <AiStatusPill status={aiStatus} />
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 grid place-items-center rounded-[8px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              aria-label="Close AI Studio"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        </div>
+        </header>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 gather-scroll">
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+          {/* Tool navigation: grouped sidebar on desktop, scrolling chips on mobile */}
+          <nav
+            aria-label="AI Studio tools"
+            className="shrink-0 md:w-[232px] border-b md:border-b-0 md:border-r border-[var(--line)] overflow-x-auto md:overflow-y-auto gather-scroll"
+            style={{ backgroundColor: 'var(--elevated-rail)' }}
+          >
+            <div className="flex md:flex-col gap-1 md:gap-5 p-2 md:p-3">
+              {AI_TOOL_GROUPS.map((group) => (
+                <div key={group} className="contents md:block md:space-y-1">
+                  <div className="hidden md:block px-2.5 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-3)]">
+                    {group}
+                  </div>
+                  {AI_TOOLS.filter((t) => t.group === group).map((item) => {
+                    const Icon = item.icon;
+                    const active = tab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-current={active ? 'page' : undefined}
+                        onClick={() => setTab(item.id)}
+                        className={`group shrink-0 md:w-full flex items-center gap-2.5 rounded-[9px] px-2.5 h-9 md:h-auto md:py-2 text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                          active
+                            ? 'bg-[var(--accent-soft)] text-[var(--ink)] shadow-[inset_0_0_0_1px_var(--accent-line)]'
+                            : 'text-[var(--ink-2)] hover:bg-[var(--fill-hover)] hover:text-[var(--ink)]'
+                        }`}
+                      >
+                        <Icon
+                          className={`w-4 h-4 shrink-0 ${active ? 'text-[var(--accent-text)]' : 'text-[var(--ink-3)] group-hover:text-[var(--ink-2)]'}`}
+                          strokeWidth={1.75}
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[12.5px] font-medium whitespace-nowrap">{item.label}</span>
+                          <span className="hidden md:block text-[11px] text-[var(--ink-3)] leading-snug mt-0.5">
+                            {item.hint}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </nav>
+
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+            {/* Active tool header */}
+            <div className="shrink-0 px-4 sm:px-6 pt-5 pb-4 border-b border-[var(--line)] flex items-start gap-3">
+              <span className="hidden sm:grid w-10 h-10 rounded-[10px] bg-[var(--fill)] border border-[var(--line-2)] place-items-center shrink-0">
+                <ActiveIcon className="w-5 h-5 text-[var(--accent-text)]" strokeWidth={1.6} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-display text-[18px] font-medium tracking-[-0.015em] text-[var(--ink)]">
+                  {activeTool.label}
+                </h3>
+                <p className="text-[13px] text-[var(--ink-2)] leading-relaxed mt-0.5 max-w-[70ch]">
+                  {activeTool.description}
+                </p>
+              </div>
+            </div>
+
+            {aiStatus === 'missing-key' && AI_POWERED_TOOLS.has(tab) && (
+              <div className="shrink-0 mx-4 sm:mx-6 mt-4 p-3 rounded-[10px] border border-[var(--warn)]/35 bg-[var(--warn)]/10 flex items-start gap-2.5 text-[12.5px] text-[var(--ink)]">
+                <Sparkles className="w-4 h-4 text-[var(--warn)] shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="leading-relaxed">
+                  <span className="font-medium">AI generation isn&rsquo;t set up on this server yet.</span>{' '}
+                  <span className="text-[var(--ink-2)]">
+                    Add a <code className="font-mono-num text-[11.5px]">GEMINI_API_KEY</code> environment variable to the deployment, then reload. Everything else in the studio keeps working.
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Content Body */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-5 space-y-5 gather-scroll">
           {/* TAB 1: AI PDF & TELEPROMPTER */}
           {tab === 'pdf' && (
             <div className="space-y-4">
@@ -976,7 +1165,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                 <div className="p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-display text-[12px] font-bold text-[var(--ink)]">
-                      Executive Deck Brief
+                      Deck summary
                     </span>
                     <button
                       type="button"
@@ -994,7 +1183,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                       className="h-7 px-3 rounded-[7px] gather-btn-tip text-[11px] font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                     >
                       <Mic className="w-3 h-3" />
-                      <span>Launch Voice-Synced Prompter</span>
+                      <span>Open in teleprompter</span>
                     </button>
                   </div>
                   <p className="text-[12px] text-[var(--ink-2)] leading-relaxed">{pdfSummary}</p>
@@ -1108,12 +1297,12 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
               <div className="gather-seg flex-wrap" role="tablist" aria-label="Graphic type">
                 {(
                   [
-                    { id: 'hud-frame', label: 'Gaming HUD Frame' },
-                    { id: 'webcam-frame', label: 'Webcam Frame' },
-                    { id: 'backdrop', label: '16:9 Stage Backdrop' },
-                    { id: 'thumbnail', label: 'Stream Thumbnail' },
-                    { id: 'logo', label: 'Brand Logo SVG' },
-                    { id: 'podcast-cover', label: '1400² Podcast Cover' },
+                    { id: 'hud-frame', label: 'Game frame' },
+                    { id: 'webcam-frame', label: 'Webcam frame' },
+                    { id: 'backdrop', label: 'Backdrop' },
+                    { id: 'thumbnail', label: 'Thumbnail' },
+                    { id: 'logo', label: 'Logo' },
+                    { id: 'podcast-cover', label: 'Podcast cover' },
                   ] as const
                 ).map((m) => (
                   <button
@@ -1132,22 +1321,22 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   {
-                    label: 'Tactical Valorant HUD',
+                    label: 'Esports frame',
                     mode: 'hud-frame' as OverlayGenMode,
                     prompt: 'Carbon esports tactical HUD perimeter frame with top match telemetry bar and glowing chamfer corners',
                   },
                   {
-                    label: 'Cyber Webcam Bezel',
+                    label: 'Webcam bezel',
                     mode: 'webcam-frame' as OverlayGenMode,
                     prompt: 'Sleek translucent cyber neon webcam bezel with twin side meters and clean center cutout',
                   },
                   {
-                    label: 'Architectural Backdrop',
+                    label: 'Studio backdrop',
                     mode: 'backdrop' as OverlayGenMode,
                     prompt: 'Refined midnight obsidian studio with soft radial light beams and crisp grid depth',
                   },
                   {
-                    label: 'Studio Emblem Logo',
+                    label: 'Emblem logo',
                     mode: 'logo' as OverlayGenMode,
                     prompt: 'Minimalist geometric broadcast emblem monogram with dual tone ring and precision symmetry',
                   },
@@ -1172,7 +1361,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                   value={graphicPrompt}
                   onChange={(e) => setGraphicPrompt(e.target.value)}
                   placeholder="Describe your gaming HUD overlay, camera frame, backdrop, or logo..."
-                  className={`${inputCls} flex-1`}
+                  className={`${inputCls} w-full sm:flex-1`}
                 />
                 <button
                   type="button"
@@ -1185,7 +1374,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                   ) : (
                     <Wand2 className="w-3.5 h-3.5" />
                   )}
-                  <span>{graphicLoading ? 'Designing…' : 'Generate Vector Asset'}</span>
+                  <span>{graphicLoading ? 'Designing…' : 'Generate'}</span>
                 </button>
               </div>
 
@@ -1268,8 +1457,8 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                       type="text"
                       value={graphicRefinePrompt}
                       onChange={(e) => setGraphicRefinePrompt(e.target.value)}
-                      placeholder="Refine with Gemini (e.g., thicker cyan glow on top edge, sharper corners)..."
-                      className={`${inputCls} flex-1`}
+                      placeholder="Describe a change, e.g. thicker glow on the top edge, sharper corners"
+                      className={`${inputCls} w-full sm:flex-1`}
                     />
                     <button
                       type="button"
@@ -1286,10 +1475,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                 <div className="py-8 px-4 rounded-[12px] bg-[var(--surface)]/50 border border-[var(--line)] text-center space-y-2">
                   <ImageIcon className="w-6 h-6 mx-auto text-[var(--accent-text)] opacity-85" />
                   <p className="font-display text-[13px] font-medium text-[var(--ink)]">
-                    Transparent gaming HUDs, camera frames, logos &amp; stage art
+                    Your graphic will appear here
                   </p>
                   <p className="text-[11.5px] text-[var(--ink-3)] max-w-md mx-auto leading-relaxed">
-                    Generate crisp resolution-independent SVG frames with transparent centers, refine iteratively with Gemini, and apply live to StageCanvas.
+                    Graphics are vector (SVG), so they stay sharp at any size. Frames keep a transparent centre so your cameras show through.
                   </p>
                 </div>
               )}
@@ -1303,10 +1492,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="font-display text-[13.5px] font-medium text-[var(--ink)]">
-                      Full Show &amp; Store Brand Kit Generator
+                      1. Pick a style
                     </div>
-                    <p className="text-[11.5px] text-[var(--ink-3)] mt-0.5">
-                      Creates cohesive palette, typography, logo, stage backdrop, transparent HUD overlay, and 3 vector-illustrated store drops synced to Firestore.
+                    <p className="text-[12px] text-[var(--ink-3)] mt-0.5">
+                      Sets the tone of the colours, type and starter products.
                     </p>
                   </div>
                   <div className="flex items-center gap-1 p-1 rounded-[8px] bg-[var(--surface)] border border-[var(--line)]">
@@ -1327,26 +1516,51 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                   </div>
                 </div>
 
+                <div className="pt-3 border-t border-[var(--line)] space-y-2">
+                  <label htmlFor="ai-kit-concept" className="block font-display text-[13.5px] font-medium text-[var(--ink)]">
+                    2. Describe your brand
+                  </label>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11.5px] text-[var(--ink-3)] mr-0.5">Try:</span>
+                    {KIT_EXAMPLES[kitNiche].map((ex) => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => setKitConcept(ex)}
+                        className="h-7 px-2.5 rounded-full border border-[var(--line-2)] bg-[var(--surface)] hover:bg-[var(--fill-hover)] hover:border-[var(--accent-line)] text-[11.5px] text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors cursor-pointer"
+                      >
+                        {ex}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
+                    id="ai-kit-concept"
                     type="text"
                     value={kitConcept}
                     onChange={(e) => setKitConcept(e.target.value)}
-                    placeholder="Describe your channel brand, aesthetic vibe, and store merchandise..."
-                    className={`${inputCls} flex-1`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && kitConcept.trim() && !kitLoading) {
+                        e.preventDefault();
+                        void handleGenerateBrandKit();
+                      }
+                    }}
+                    placeholder="Who you are, the vibe, and what you sell"
+                    className={`${inputCls} h-10 text-[13px] w-full sm:flex-1`}
                   />
                   <button
                     type="button"
                     disabled={kitLoading || !kitConcept.trim()}
                     onClick={() => void handleGenerateBrandKit()}
-                    className={`${primaryBtnCls} h-9`}
+                    className={`${primaryBtnCls} h-10 px-4 text-[12.5px] justify-center`}
                   >
                     {kitLoading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Sparkles className="w-3.5 h-3.5" />
                     )}
-                    <span>{kitLoading ? 'Synthesizing Kit…' : 'Generate Brand Kit'}</span>
+                    <span>{kitLoading ? 'Creating your kit…' : 'Create brand kit'}</span>
                   </button>
                 </div>
 
@@ -1393,7 +1607,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                           >
                             <FolderHeart className="w-3.5 h-3.5 text-[var(--cyan)]" />
                             <span>
-                              {savingKitId === draftKit.id ? 'Saving…' : 'Save to Firestore'}
+                              {savingKitId === draftKit.id ? 'Saving…' : 'Save kit'}
                             </span>
                           </button>
                         )}
@@ -1452,10 +1666,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="text-[12px] font-medium text-[var(--ink)]">
-                    Saved Account Brand Kits ({brandKits.length})
+                    Your saved kits ({brandKits.length})
                   </div>
                   <span className="text-[11px] text-[var(--ink-3)]">
-                    Synced across rooms via Firestore
+                    Available in every room you host
                   </span>
                 </div>
 
@@ -1542,10 +1756,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                   <div className="py-7 px-4 rounded-[12px] bg-[var(--surface)]/50 border border-[var(--line)] text-center space-y-1.5">
                     <FolderHeart className="w-5 h-5 mx-auto text-[var(--accent-text)] opacity-85" />
                     <p className="text-[12.5px] font-medium text-[var(--ink)]">
-                      No saved Brand Kits yet
+                      No saved kits yet
                     </p>
                     <p className="text-[11px] text-[var(--ink-3)]">
-                      Generate a Brand Kit above and save it to reuse logos, HUD frames, and drop catalogs across all rooms.
+                      Create a kit above and save it to reuse its logo, frames and products in any room.
                     </p>
                   </div>
                 )}
@@ -1556,16 +1770,16 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
           {/* TAB 4: GEMINI 3.8 VOICE STINGERS & AI SYNTH MUSIC LOOPS */}
           {tab === 'audio' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Left Column: Gemini 3.8 TTS Voice Stingers */}
+              {/* Left column: voice intros */}
               <div className="p-4 rounded-[12px] bg-[var(--fill)] border border-[var(--line)] space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <div className="font-display text-[13.5px] font-medium text-[var(--ink)] flex items-center gap-1.5">
                       <Volume2 className="w-4 h-4 text-[var(--accent-text)]" />
-                      <span>Gemini 3.8 Voice Stinger</span>
+                      <span>Voice intro</span>
                     </div>
                     <p className="text-[11px] text-[var(--ink-3)] mt-0.5">
-                      Generates real WAV intro drops or dual-host hype promos directly into your Stinger Deck.
+                      Write a line or a two-host promo. It is voiced and added to your stinger deck.
                     </p>
                   </div>
                 </div>
@@ -1683,7 +1897,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                     <span>AI Broadcast Music Bed</span>
                   </div>
                   <p className="text-[11px] text-[var(--ink-3)] mt-0.5">
-                    Gemini composes stereo synth harmonies, drums &amp; bass rendered in-browser into crisp 44.1kHz WAV loops.
+                    Describe a mood and get a loopable track for intros, breaks and background.
                   </p>
                 </div>
 
@@ -1792,10 +2006,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="font-display text-[13.5px] font-medium text-[var(--ink)]">
-                      Kinetic Broadcast Motion Bumpers (WebM)
+                      Choose a shape
                     </div>
                     <p className="text-[11.5px] text-[var(--ink-3)] mt-0.5">
-                      Gemini choreographs animated Starting Soon, BRB, and Drop Alert bumpers encoded live into playable stage WebM video.
+                      Widescreen for the stage and YouTube, vertical for Shorts, Reels and TikTok.
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1846,7 +2060,7 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                     value={bumperPrompt}
                     onChange={(e) => setBumperPrompt(e.target.value)}
                     placeholder="Describe headline energy, pace, and visual style..."
-                    className={`${inputCls} flex-1`}
+                    className={`${inputCls} w-full sm:flex-1`}
                   />
                   <select
                     value={bumperDuration}
@@ -1945,10 +2159,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-[12px] bg-[var(--fill)] border border-[var(--line)]">
                 <div className="min-w-0 flex-1">
                   <div className="font-display text-[13.5px] font-bold text-[var(--ink)]">
-                    Viral Moment Detector &amp; Video Stage Deck
+                    Find highlights
                   </div>
                   <p className="text-[11.5px] text-[var(--ink-3)] mt-0.5 leading-relaxed">
-                    Drop MP4/WebM clips onto stage or scan live chat spikes and rundown beats for 9:16 &amp; 16:9 highlights.
+                    Scan chat spikes and your rundown for share-worthy moments, or upload a video to play on stage.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -2061,10 +2275,10 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="font-display text-[13.5px] font-bold text-[var(--ink)]">
-                      Hosted Gather Podcast RSS 2.0 Feed
+                      Your podcast feed
                     </div>
                     <p className="text-[11.5px] text-[var(--ink-3)] mt-0.5">
-                      Paste once into Spotify, Apple Podcasts, or Amazon Music — every published WAV episode syncs automatically.
+                      Add this link to Spotify, Apple Podcasts or Amazon Music once. New episodes appear there automatically.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -2281,6 +2495,8 @@ export const AiMediaPodcastDrawer: React.FC<AiMediaPodcastDrawerProps> = ({
               </div>
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

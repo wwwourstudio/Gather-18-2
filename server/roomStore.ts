@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { ClientMeta, ServerFlashSale, ServerRoomState } from './types.ts';
+import { ClientMeta, ServerFlashSale, ServerRoomState } from './types.js';
 
 export const rooms = new Map<string, ServerRoomState>();
 export const roomSockets = new Map<string, Map<string, ClientMeta>>();

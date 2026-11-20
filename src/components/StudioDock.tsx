@@ -1604,16 +1604,17 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     (editMode ? 1 : 0) + (teleprompterOpen ? 1 : 0) + (safeZone916 ? 1 : 0);
 
   const dockBtn =
-    'relative h-8 px-2.5 rounded-[7px] inline-flex items-center justify-center gap-1.5 text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
+    'relative h-9 sm:h-8 px-2 sm:px-2.5 rounded-[7px] inline-flex items-center justify-center gap-1.5 text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
 
   return (
-    <footer className="relative shrink-0 h-[52px] border-t border-[var(--line)] bg-[var(--bg-2)]/95 backdrop-blur-md px-4 flex items-center justify-between gap-4">
+    <footer className="relative shrink-0 h-[56px] sm:h-[52px] border-t border-[var(--line)] bg-[var(--bg-2)]/95 backdrop-blur-md px-1.5 sm:px-4 flex items-center justify-between gap-1 sm:gap-4 pb-[env(safe-area-inset-bottom)]">
       {/* Zone 1: AV Inputs & Stage Presenting */}
       <div className="flex items-center gap-1 min-w-0">
         <button
           type="button"
           onClick={onToggleMic}
           title="Toggle Microphone (M)"
+          aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
           className={`${dockBtn} ${
             micOn
               ? 'text-[var(--ink)] hover:bg-[var(--fill-hover)]'
@@ -1621,13 +1622,14 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           }`}
         >
           {micOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-          <span>{micOn ? 'Mic' : 'Muted'}</span>
+          <span className="hidden md:inline">{micOn ? 'Mic' : 'Muted'}</span>
         </button>
 
         <button
           type="button"
           onClick={onToggleCam}
           title="Toggle Camera (V)"
+          aria-label={camOn ? 'Turn camera off' : 'Turn camera on'}
           className={`${dockBtn} ${
             camOn
               ? 'text-[var(--ink)] hover:bg-[var(--fill-hover)]'
@@ -1635,7 +1637,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           }`}
         >
           {camOn ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
-          <span>{camOn ? 'Camera' : 'Cam off'}</span>
+          <span className="hidden md:inline">{camOn ? 'Camera' : 'Cam off'}</span>
         </button>
 
         <div ref={presentWrapRef} className="relative">
@@ -1645,6 +1647,8 @@ export const BottomDock: React.FC<BottomDockProps> = ({
               setToolsMenuOpen(false);
               setPresentMenuOpen((v) => !v);
             }}
+            aria-label="Present screen, slides or media"
+            aria-expanded={presentMenuOpen}
             className={`${dockBtn} ${
               sharingScreen || presentMenuOpen
                 ? 'bg-[var(--accent-soft)] text-[var(--ink)]'
@@ -1652,7 +1656,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
             }`}
           >
             <MonitorUp className="w-4 h-4" />
-            <span>{sharingScreen ? 'Sharing' : 'Present'}</span>
+            <span className="hidden md:inline">{sharingScreen ? 'Sharing' : 'Present'}</span>
           </button>
 
           {presentMenuOpen && (

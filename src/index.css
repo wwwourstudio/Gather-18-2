@@ -77,7 +77,7 @@
   --scrim-backdrop: rgba(11, 18, 34, 0.56);
   --ink: #0b1426;
   --ink-2: #3b4c6b;
-  --ink-3: #637491;
+  --ink-3: #56667f;
   --line: rgba(11, 20, 38, 0.085);
   --line-2: rgba(11, 20, 38, 0.145);
   --accent: #2563eb;
@@ -840,6 +840,273 @@ input[type="range"].gather-range:hover::-webkit-slider-thumb {
 .animate-gather-float-card {
   animation: gatherFloatBreath 5.2s ease-in-out infinite;
   will-change: transform;
+}
+
+/* ------------------------------------------------------------------------------------
+   Motion & glass layer: living gradients, frosted surfaces and micro-interactions.
+   Everything here is cosmetic and is neutralised by the reduced-motion block below.
+   ------------------------------------------------------------------------------------ */
+
+/* Drifting aurora behind the landing + watch pages (and, softer, the studio). */
+.gather-backdrop,
+.gather-aurora-soft {
+  position: relative;
+  isolation: isolate;
+}
+
+.gather-backdrop::before,
+.gather-aurora-soft::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(28% 32% at 22% 28%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+    radial-gradient(24% 28% at 78% 22%, color-mix(in srgb, var(--cyan) 22%, transparent), transparent 70%),
+    radial-gradient(30% 30% at 70% 78%, rgba(139, 92, 246, 0.26), transparent 70%),
+    radial-gradient(22% 26% at 26% 82%, rgba(236, 72, 153, 0.14), transparent 72%);
+  filter: blur(40px) saturate(130%);
+  animation: gatherAuroraDrift 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.gather-aurora-soft::before {
+  opacity: 0.45;
+}
+
+:root[data-theme="light"] .gather-backdrop::before,
+:root[data-theme="light"] .gather-aurora-soft::before {
+  opacity: 0.55;
+}
+
+@keyframes gatherAuroraDrift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate3d(4%, -3%, 0) rotate(8deg) scale(1.06); }
+  66% { transform: translate3d(-3%, 4%, 0) rotate(-6deg) scale(1.03); }
+  100% { transform: translate3d(2%, 2%, 0) rotate(4deg) scale(1.08); }
+}
+
+/* Specular top edge on every glass/card surface. */
+.gather-card-obsidian,
+.gather-glass,
+.gather-glass-elevated,
+.gather-dropdown-surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 24px 60px -28px rgba(0, 0, 0, 0.8);
+}
+
+:root[data-theme="light"] .gather-card-obsidian,
+:root[data-theme="light"] .gather-glass,
+:root[data-theme="light"] .gather-glass-elevated,
+:root[data-theme="light"] .gather-dropdown-surface {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 22px 50px -26px rgba(15, 23, 42, 0.22);
+}
+
+/* Frosted landing/watch header bar. */
+.gather-header-glass {
+  background: color-mix(in srgb, var(--bg) 42%, transparent);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+/* Gradient-flow buttons with a light sweep on hover. */
+.gather-btn-primary,
+.gather-btn-tip,
+.gather-btn-live {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-size: 180% 180%;
+  background-position: 0% 50%;
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 160ms ease,
+    box-shadow 200ms ease,
+    background-position 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gather-btn-primary {
+  background-image: linear-gradient(120deg, #3b82f6 0%, #6366f1 45%, #2563eb 70%, #06b6d4 100%);
+}
+
+.gather-btn-primary:hover,
+.gather-btn-tip:hover,
+.gather-btn-live:hover {
+  background-position: 100% 50%;
+  transform: translateY(-1px);
+}
+
+.gather-btn-primary:active,
+.gather-btn-tip:active,
+.gather-btn-live:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.gather-btn-primary::after,
+.gather-btn-tip::after,
+.gather-btn-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.gather-btn-primary:hover::after,
+.gather-btn-tip:hover::after,
+.gather-btn-live:hover::after {
+  transform: translateX(120%);
+}
+
+.gather-btn-primary:disabled,
+.gather-btn-primary[disabled] {
+  transform: none;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+/* Animated gradient headline text. */
+.gather-headline-flow {
+  background: linear-gradient(100deg, var(--ink-2) 0%, #60a5fa 28%, #a78bfa 52%, #22d3ee 76%, var(--ink-2) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gatherTextFlow 9s ease-in-out infinite alternate;
+}
+
+:root[data-theme="light"] .gather-headline-flow {
+  background-image: linear-gradient(100deg, #1e3a8a 0%, #2563eb 28%, #7c3aed 52%, #0891b2 76%, #1e3a8a 100%);
+}
+
+@keyframes gatherTextFlow {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+/* Rotating gradient rim for hero showcase panels. */
+.gather-glow-rim {
+  position: relative;
+}
+
+.gather-glow-rim::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--rim-angle, 0deg), transparent 0deg, #60a5fa 70deg, #a78bfa 140deg, transparent 210deg, #22d3ee 300deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.75;
+  animation: gatherRimSpin 8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@property --rim-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes gatherRimSpin {
+  to { --rim-angle: 360deg; }
+}
+
+/* Glowing, glassy input bar. */
+.gather-input-glass {
+  background: color-mix(in srgb, var(--fill) 70%, transparent);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  transition: border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.gather-input-glass:focus-within {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 12px 32px -16px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/* Gentle lift for interactive tiles. */
+.gather-lift {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.gather-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Soft breathing glow for live indicators. */
+.gather-live-glow {
+  animation: gatherLiveGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes gatherLiveGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+}
+
+/* Studio stage gets a slow gradient halo so the canvas feels lit. */
+.gather-stage-halo {
+  position: relative;
+  isolation: isolate;
+}
+
+.gather-stage-halo::before {
+  content: '';
+  position: absolute;
+  inset: 6% 10%;
+  z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 26%, transparent), transparent);
+  filter: blur(50px);
+  animation: gatherHaloPulse 7s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes gatherHaloPulse {
+  from { opacity: 0.55; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+/* Landing mock-up: follow light theme for the window chrome, keep the "video" dark. */
+:root[data-theme="light"] .gather-mock [class*="bg-[#0"]:not(.mock-video, .mock-video *) {
+  background-color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+:root[data-theme="light"] .gather-mock [class*="text-white"]:not([class*="bg-[#"]):not([class*="bg-violet"]):not(.mock-video, .mock-video *),
+:root[data-theme="light"] .gather-mock [class*="bg-[#0"][class*="text-white"]:not(.mock-video, .mock-video *) {
+  color: var(--ink);
+}
+
+:root[data-theme="light"] .gather-mock :is([class*="text-white/3"], [class*="text-white/4"], [class*="text-white/5"], [class*="text-white/6"]):not([class*="bg-[#"]):not(.mock-video, .mock-video *) {
+  color: var(--ink-3);
+}
+
+:root[data-theme="light"] .gather-mock :is([class*="text-white/7"], [class*="text-white/8"]):not([class*="bg-[#"]):not(.mock-video, .mock-video *) {
+  color: var(--ink-2);
+}
+
+:root[data-theme="light"] .gather-mock [class*="border-white"]:not(.mock-video, .mock-video *),
+:root[data-theme="light"] .gather-mock [class*="border-[#0"]:not(.mock-video, .mock-video *) {
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme="light"] .gather-mock [class*="bg-white/"]:not(.mock-video, .mock-video *) {
+  background-color: rgba(15, 23, 42, 0.045);
+}
+
+:root[data-theme="light"] .gather-mock [class*="shadow-["]:not(.mock-video, .mock-video *) {
+  box-shadow: 0 24px 60px -28px rgba(15, 23, 42, 0.28);
 }
 
 @media (prefers-reduced-motion: reduce) {
