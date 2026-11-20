@@ -3,6 +3,7 @@ import { ArrowRight, Trash2 } from 'lucide-react';
 import { ScheduledShow, WatchMode } from '../types/studio';
 import { GatherLogo } from './GatherLogo';
 import { LandingStageShowcase } from './landing/LandingStageShowcase';
+import { LandingSections } from './landing/LandingSections';
 
 interface LandingViewProps {
   scheduledShows: ScheduledShow[];
@@ -42,8 +43,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
   };
 
   return (
-    <main className="flex-1 min-h-0 flex items-center justify-center overflow-y-auto lg:overflow-hidden gather-scroll animate-gather-panel">
-      <section className="w-[90%] max-w-[1360px] mx-auto py-4 sm:py-6 lg:py-0">
+    <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden gather-scroll animate-gather-panel scroll-smooth">
+      {/* Hero fills the first screen and centres itself; content below it scrolls normally. */}
+      <section className="w-[90%] max-w-[1360px] mx-auto min-h-full flex flex-col justify-center py-8 sm:py-10 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-[44%_56%] gap-8 lg:gap-0 items-center">
           {/* Left Column: Clean Editorial Value Proposition */}
           <div className="flex flex-col items-start gap-5 xl:gap-6 lg:pr-[6%]">
@@ -54,7 +56,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <span className="w-7 h-7 rounded-[7px] bg-[var(--accent-soft)] border border-[var(--accent-line)] grid place-items-center shrink-0">
                 <GatherLogo size={14} />
               </span>
-              <span className="text-[11px] font-medium tracking-[0.15em] uppercase text-[var(--ink-3)]">
+              <span className="text-[11.5px] font-medium tracking-[0.15em] uppercase text-[var(--ink-3)]">
                 Broadcasting, reimagined
               </span>
             </div>
@@ -90,7 +92,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenSchedule}
-                className="pb-1.5 border-b border-[var(--line-2)] hover:border-[var(--ink)] text-[14px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="pb-1.5 border-b border-[var(--line-2)] hover:border-[var(--ink)] text-[14px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors whitespace-nowrap shrink-0 cursor-pointer rounded-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--bg)]"
               >
                 Schedule for later
               </button>
@@ -115,7 +117,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   id="gather-join-code"
                   type="text"
                   value={joinInput}
-                  onChange={(e) => setJoinInput(e.target.value)}
+                  onChange={(e) => {
+                    setJoinInput(e.target.value);
+                    if (joinError) setJoinError('');
+                  }}
+                  aria-invalid={Boolean(joinError)}
+                  aria-describedby={joinError ? 'gather-join-error' : undefined}
                   placeholder="Paste link or room code"
                   spellCheck={false}
                   className="flex-1 min-w-0 bg-transparent text-[13.5px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none"
@@ -128,12 +135,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
               </form>
-              {joinError && <p className="text-xs text-[var(--danger)]">{joinError}</p>}
+              {joinError && (
+                <p id="gather-join-error" role="alert" className="text-[12.5px] text-[var(--danger)]">
+                  {joinError}
+                </p>
+              )}
             </div>
 
             {/* Quiet Unboxed Benefits Row */}
             <div
-              className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12px] text-[var(--ink-3)] animate-gather-hero"
+              className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px] text-[var(--ink-3)] animate-gather-hero"
               style={{ animationDelay: '280ms' }}
             >
               <span className="inline-flex items-center gap-2">
@@ -182,6 +193,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
           <LandingStageShowcase userName={userName} onOpenWatchDemo={onOpenWatchDemo} />
         </div>
       </section>
+
+      <LandingSections
+        onCreateStudio={(mode) => onCreateStudio(mode || 'standard')}
+        onOpenWatchDemo={onOpenWatchDemo}
+        onOpenSchedule={onOpenSchedule}
+      />
     </main>
   );
 };

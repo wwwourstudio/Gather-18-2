@@ -360,7 +360,19 @@ function drawParticipantTile(
     const metrics = c.measureText(labelText);
     const bw = Math.min(rw - 24, metrics.width + 24);
     const bx = rx + 12;
-    const by = ry + rh - (viewerMode ? 58 : 40);
+    let by = ry + rh - (viewerMode ? 58 : 40);
+    // Lift the name tag above the lower-third banner when they would collide.
+    const bannerOn =
+      room.overlays.banner.visible &&
+      room.overlays.banner.title &&
+      !(viewerMode && room.watchMode === 'shop');
+    if (bannerOn) {
+      const bannerTop = room.overlays.ticker.visible ? stageH - 124 : viewerMode ? stageH - 110 : stageH - 98;
+      const bannerRight = 34 + Math.min(stageW - 68, 640);
+      if (by + 28 > bannerTop - 8 && bx < bannerRight && bx + bw > 34) {
+        by = Math.max(ry + 8, bannerTop - 8 - 28);
+      }
+    }
 
     if (tagStyle === 'solid') {
       c.fillStyle = accent;

@@ -1,31 +1,22 @@
 import 'dotenv/config';
-import express from 'express';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { registerAiRoutes } from './server/routes/ai.ts';
-import { registerCommerceRoutes } from './server/routes/commerce.ts';
-import { registerNotificationRoutes } from './server/routes/notifications.ts';
-import { registerPodcastRoutes } from './server/routes/podcast.ts';
-import { attachWebSocketHub } from './server/ws/roomHub.ts';
+import express from 'express';
+import { createApiApp } from './server/app.js';
+import { attachWebSocketHub } from './server/ws/roomHub.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = Number(process.env.PORT || 3000);
 
 async function startServer() {
-  const app = express();
-  app.use(express.json({ limit: '25mb' }));
+  // All /api routes live in server/app.ts so Vercel can serve the same handlers.
+  const app = createApiApp();
 
   const server = http.createServer(app);
   attachWebSocketHub(server);
-
-  // Modular API routes
-  registerCommerceRoutes(app);
-  registerAiRoutes(app);
-  registerPodcastRoutes(app);
-  registerNotificationRoutes(app);
 
   // Vite or Static Hosting
   if (process.env.NODE_ENV !== 'production') {

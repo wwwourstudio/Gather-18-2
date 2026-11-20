@@ -188,7 +188,7 @@ export const WatchStageSection: React.FC<WatchStageSectionProps> = ({
   };
 
   return (
-    <section className="min-h-0 min-w-0 w-full flex flex-col gap-2.5 overflow-visible lg:overflow-hidden">
+    <section className="lg:min-h-0 min-w-0 w-full flex flex-col gap-2.5 overflow-visible lg:overflow-hidden">
       {/* Editorial Stream Header */}
       <header className="relative z-20 shrink-0 px-0.5 pt-0.5 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
@@ -611,15 +611,15 @@ export const WatchStageSection: React.FC<WatchStageSectionProps> = ({
               className="w-11 h-11 rounded-[9px] object-cover border border-[var(--line-2)] shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-[var(--ink-3)]">
-                <Pin className="w-3 h-3 text-[var(--cyan)]" />
-                <span>Pinned by {hostDisplayName}</span>
-                <span className="text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-1.5 text-[10.5px] font-semibold tracking-wider uppercase text-[var(--ink-3)] whitespace-nowrap min-w-0">
+                <Pin className="w-3 h-3 text-[var(--cyan)] shrink-0" />
+                <span className="truncate">Pinned by {hostDisplayName}</span>
+                <span className="text-amber-600 dark:text-amber-400 shrink-0">
                   · {pinnedProduct.stock} left
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-[13.5px] font-semibold text-[var(--ink)] truncate">
+                <span className="text-[13.5px] font-semibold text-[var(--ink)] truncate min-w-0">
                   {pinnedProduct.title}
                 </span>
                 <span className="font-mono-num text-[14px] font-bold text-[var(--ink)] shrink-0">
@@ -634,12 +634,12 @@ export const WatchStageSection: React.FC<WatchStageSectionProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             <button
               type="button"
               disabled={pinnedProduct.stock <= 0}
               onClick={() => onAddToBag(pinnedProduct, 1, undefined, true)}
-              className="h-8 px-3.5 rounded-[9px] gather-btn-primary text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="flex-1 sm:flex-none justify-center h-9 sm:h-8 px-3.5 rounded-[9px] gather-btn-primary text-[12.5px] sm:text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Buy now · {formatMoney(getProductSalePrice(pinnedProduct))}</span>

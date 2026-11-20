@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { verifyFirebaseIdToken } from '../auth.ts';
+import { verifyFirebaseIdToken } from '../auth.js';
 
 function escapeHtml(str: string): string {
   return str

@@ -160,6 +160,7 @@ export function useStudioSocket(opts: UseStudioSocketOptions) {
     let cancelled = false;
     let reconnectTimer: number | null = null;
     let attempt = 0;
+    let everConnected = false;
 
     const connect = () => {
       if (cancelled) return;
@@ -171,6 +172,7 @@ export function useStudioSocket(opts: UseStudioSocketOptions) {
 
       ws.onopen = async () => {
         attempt = 0;
+        everConnected = true;
         setConnState('online');
         let authToken: string | undefined;
         try {
@@ -337,8 +339,11 @@ export function useStudioSocket(opts: UseStudioSocketOptions) {
       ws.onclose = () => {
         if (cancelled) return;
         attempt += 1;
-        setConnState('reconnecting');
-        const delay = Math.min(5000, 1000 * attempt);
+        // Hosts without a realtime server (e.g. static deploys) never connect: after a few
+        // tries, report "offline" so the UI can show a local-preview state, and back off.
+        const unreachable = !everConnected && attempt >= 3;
+        setConnState(unreachable ? 'offline' : 'reconnecting');
+        const delay = unreachable ? 30000 : Math.min(15000, 1000 * 2 ** Math.min(attempt, 4));
         reconnectTimer = window.setTimeout(connect, delay);
       };
     };

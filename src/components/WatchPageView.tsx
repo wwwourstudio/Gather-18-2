@@ -402,7 +402,7 @@ export const WatchPageView: React.FC<WatchPageViewProps> = ({
     <div className="flex-1 min-h-0 w-full flex flex-col lg:overflow-hidden">
       {/* 100% Percentage Grid: 68% Stage / 32% Companion Rail on lg, 70% / 30% on xl */}
       <div
-        className={`flex-1 min-h-0 w-full px-[1.2%] pb-3 pt-1 grid grid-cols-1 gap-3.5 overflow-y-auto lg:overflow-hidden ${
+        className={`flex-1 min-h-0 w-full px-[1.2%] pb-3 pt-1 grid grid-cols-1 content-start lg:content-stretch gap-3.5 overflow-y-auto lg:overflow-hidden ${
           isGamerMode && theaterMode
             ? 'lg:grid-cols-1'
             : 'lg:grid-cols-[68%_32%] xl:grid-cols-[70%_30%]'

@@ -85,7 +85,7 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
   onEnter,
   isNewStudio,
 }) => {
-  const [name, setName] = useState(initialName || 'Maya Chen');
+  const [name, setName] = useState(initialName || '');
   const [studioTitle, setStudioTitle] = useState(DEFAULT_TITLES[initialWatchMode]);
   const [titleEdited, setTitleEdited] = useState(false);
   const [watchMode, setWatchMode] = useState<WatchMode>(initialWatchMode);
@@ -438,6 +438,7 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setMicOn((v) => !v)}
+                    aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
                     className={`h-8 px-3 rounded-[8px] text-[11.5px] font-semibold inline-flex items-center gap-1.5 backdrop-blur-xl border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                       micOn
                         ? 'bg-black/60 text-white border-white/15 hover:bg-black/80'
@@ -445,11 +446,12 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                     }`}
                   >
                     {micOn ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                    <span>{micOn ? 'Mic on' : 'Muted'}</span>
+                    <span className="hidden sm:inline">{micOn ? 'Mic on' : 'Muted'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setCamOn((v) => !v)}
+                    aria-label={camOn ? 'Turn camera off' : 'Turn camera on'}
                     className={`h-8 px-3 rounded-[8px] text-[11.5px] font-semibold inline-flex items-center gap-1.5 backdrop-blur-xl border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                       camOn
                         ? 'bg-black/60 text-white border-white/15 hover:bg-black/80'
@@ -457,13 +459,13 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                     }`}
                   >
                     {camOn ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-                    <span>{camOn ? 'Cam on' : 'Cam off'}</span>
+                    <span className="hidden sm:inline">{camOn ? 'Cam on' : 'Cam off'}</span>
                   </button>
                 </div>
 
                 {/* Live 12-Bar LED Audio Input Meter */}
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] bg-black/65 backdrop-blur-xl border border-white/15">
-                  <span className="text-[9.5px] font-mono-num tabular-nums text-white/60 w-9 text-right">
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] bg-black/65 backdrop-blur-xl border border-white/15 min-w-0">
+                  <span className="hidden sm:inline text-[10px] font-mono-num tabular-nums text-white/70 w-9 text-right">
                     {micOn ? `${meterDb}dB` : 'MUTE'}
                   </span>
                   <div className="flex items-center gap-0.5" aria-label="Microphone input level">
@@ -740,7 +742,9 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Alex Rivera"
+                    placeholder="Your name, as guests will see it"
+                    autoComplete="name"
+                    maxLength={40}
                     className={inputCls}
                   />
                 </div>

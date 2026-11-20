@@ -1,7 +1,17 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+// pdf.js is ~1 MB, so it is loaded on first use instead of with the app shell.
+let pdfjsPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+function loadPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = Promise.all([
+      import('pdfjs-dist'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+    ]).then(([lib, worker]) => {
+      lib.GlobalWorkerOptions.workerSrc = worker.default;
+      return lib;
+    });
+  }
+  return pdfjsPromise;
+}
 
 export interface ExtractedPdfDeck {
   pages: HTMLCanvasElement[];
@@ -9,7 +19,7 @@ export interface ExtractedPdfDeck {
 }
 
 export async function extractPdfDeck(file: File): Promise<ExtractedPdfDeck> {
-  const buffer = await file.arrayBuffer();
+  const [pdfjsLib, buffer] = await Promise.all([loadPdfjs(), file.arrayBuffer()]);
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const pages: HTMLCanvasElement[] = [];
   const slideTexts: string[] = [];

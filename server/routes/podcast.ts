@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import { ServerPodcastEpisode, ServerPodcastShow } from '../types.ts';
+import { ServerPodcastEpisode, ServerPodcastShow } from '../types.js';
 
 const podcastShows = new Map<string, ServerPodcastShow>();
 const podcastAudioBuffers = new Map<string, { buffer: Buffer; mimeType: string }>();

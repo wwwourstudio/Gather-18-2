@@ -208,7 +208,14 @@ export function renderFallbackStageFrame(rc: FallbackRenderContext) {
       ctx.font = '500 13px "Outfit", "Plus Jakarta Sans", sans-serif';
       const bw = Math.min(rw - 24, ctx.measureText(labelText).width + 24);
       const bx = rx + 12;
-      const by = ry + rh - (viewerMode ? 58 : 40);
+      let by = ry + rh - (viewerMode ? 58 : 40);
+      if (room.overlays.banner.visible && room.overlays.banner.title) {
+        const bannerTop = h - 98;
+        const bannerRight = 34 + Math.min(w - 68, 640);
+        if (by + 28 > bannerTop - 8 && bx < bannerRight && bx + bw > 34) {
+          by = Math.max(ry + 8, bannerTop - 8 - 28);
+        }
+      }
       ctx.fillStyle = 'rgba(10, 17, 35, 0.76)';
       drawRoundedRect(ctx, bx, by, bw, 28, 8);
       ctx.fill();

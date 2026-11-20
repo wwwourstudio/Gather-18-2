@@ -1,7 +1,7 @@
 import dns from 'dns/promises';
 import net from 'net';
 import { Express } from 'express';
-import { rooms } from '../roomStore.ts';
+import { rooms } from '../roomStore.js';
 
 function isPrivateOrReservedIp(ip: string): boolean {
   if (net.isIPv4(ip)) {

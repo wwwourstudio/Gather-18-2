@@ -192,12 +192,15 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
   useEffect(() => {
     const timer = window.setInterval(() => {
       setLiveSec((s) => s + 1);
-      setViewerCount((v) => {
-        const delta = Math.random() > 0.55 ? 1 : Math.random() > 0.85 ? -1 : 0;
-        return Math.max(1240, v + delta);
-      });
     }, 1000);
-    return () => window.clearInterval(timer);
+    // Viewer count drifts slowly so it reads as live, not as jitter.
+    const drift = window.setInterval(() => {
+      setViewerCount((v) => Math.max(1240, v + Math.round(Math.random() * 9) - 2));
+    }, 7000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearInterval(drift);
+    };
   }, []);
 
   // Auto-stream new chat messages, Super Chats, Shopping drops & Gamer queues
@@ -396,7 +399,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                     )}
                     <div className="absolute left-3 bottom-2.5 z-10 leading-tight">
                       <div className="text-[11px] font-semibold text-white">Maya</div>
-                      <div className="text-[9px] text-white/55">Host</div>
+                      <div className="text-[9.5px] text-white/60">Host</div>
                     </div>
                   </div>
 
@@ -424,6 +427,10 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                         J
                       </div>
                     )}
+                    <div className="absolute left-3 bottom-2.5 z-10 leading-tight">
+                      <div className="text-[11px] font-semibold text-white">Jordan</div>
+                      <div className="text-[9.5px] text-white/60">Guest</div>
+                    </div>
                     <div
                       className="absolute right-3 bottom-2.5 z-10 inline-flex items-end gap-[2.5px] h-3.5"
                       aria-hidden="true"

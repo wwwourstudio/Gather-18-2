@@ -5,6 +5,7 @@ import {
   Eye,
   HelpCircle,
   LogIn,
+  LogOut,
   Moon,
   Radio,
   Settings,
@@ -157,16 +158,21 @@ export const TopBar: React.FC<TopBarProps> = ({
           <span
             className={`${
               variant === 'pill' ? 'w-7 h-7 text-[11px]' : 'w-6 h-6 text-[10.5px]'
-            } rounded-full bg-indigo-500 text-white font-display font-medium grid place-items-center shrink-0`}
+            } rounded-full font-display font-medium grid place-items-center shrink-0 ${
+              user
+                ? 'bg-indigo-500 text-white'
+                : 'bg-[var(--fill-active)] text-[var(--ink-2)] border border-[var(--line-2)]'
+            }`}
+            aria-hidden="true"
           >
-            {user ? shortName[0]?.toUpperCase() || 'Y' : 'Y'}
+            {user ? shortName[0]?.toUpperCase() || 'Y' : <User className="w-3.5 h-3.5" />}
           </span>
         )}
 
         {variant === 'pill' ? (
           <span className="hidden sm:flex flex-col leading-tight">
             <span className="text-[12px] font-medium text-[var(--ink)] max-w-[96px] truncate">
-              {user ? shortName : 'You'}
+              {user ? shortName : 'Guest'}
             </span>
             <span className="text-[10.5px] text-[var(--ink-3)]">
               {user ? 'Your account' : 'Sign in'}
@@ -174,7 +180,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </span>
         ) : (
           <span className="hidden sm:inline max-w-[92px] truncate">
-            {user ? shortName : 'Account'}
+            {user ? shortName : 'Sign in'}
           </span>
         )}
 
@@ -200,13 +206,20 @@ export const TopBar: React.FC<TopBarProps> = ({
                 className="w-8 h-8 rounded-full object-cover border border-[var(--line-2)] shrink-0"
               />
             ) : (
-              <span className="w-8 h-8 rounded-full bg-[var(--accent)] text-white font-display font-medium text-[12px] grid place-items-center shrink-0">
-                {user ? shortName[0]?.toUpperCase() || 'Y' : 'G'}
+              <span
+                className={`w-8 h-8 rounded-full font-display font-medium text-[12px] grid place-items-center shrink-0 ${
+                  user
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--fill-active)] text-[var(--ink-2)] border border-[var(--line-2)]'
+                }`}
+                aria-hidden="true"
+              >
+                {user ? shortName[0]?.toUpperCase() || 'Y' : <User className="w-4 h-4" />}
               </span>
             )}
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-medium text-[var(--ink)] truncate">
-                {user ? displayFullName : 'Gather Account'}
+                {user ? displayFullName : 'Browsing as guest'}
               </div>
               <div className="text-[11px] text-[var(--ink-3)] truncate">
                 {user?.email || 'Sign in to sync kits, rooms & payouts'}
@@ -331,7 +344,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   if (mode === 'landing') {
     return (
-      <header className="w-[90%] max-w-[1360px] mx-auto h-[58px] shrink-0 flex items-center justify-between gap-8 border-b border-[var(--line)] relative z-40">
+      <header className="w-[90%] max-w-[1360px] mx-auto h-[58px] shrink-0 flex items-center justify-between gap-4 sm:gap-8 border-b border-[var(--line)] relative z-40">
         {/* Zone 1: Clean Gather Wordmark */}
         <button
           type="button"
@@ -345,7 +358,30 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Zone 2/3: Live Demo Action + Compact Account / Theme Switcher */}
-        <div className="flex items-center gap-6 shrink-0">
+        <nav className="hidden md:flex items-center gap-6 flex-1 justify-center" aria-label="Sections">
+          {[
+            ['Features', 'features'],
+            ['Formats', 'formats'],
+            ['How it works', 'how-it-works'],
+          ].map(([label, id]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              onClick={(e) => {
+                const el = document.getElementById(id);
+                if (el) {
+                  e.preventDefault();
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
+              className="text-[13px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors whitespace-nowrap rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           {onOpenWatchDemo && (
             <button
               type="button"
@@ -363,7 +399,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   if (mode === 'watch') {
     return (
-      <header className="w-full h-[56px] shrink-0 flex items-center justify-between gap-6 px-3 sm:px-5 border-b border-[var(--line)] relative z-40">
+      <header className="w-full h-[56px] shrink-0 flex items-center justify-between gap-3 sm:gap-6 px-3 sm:px-5 border-b border-[var(--line)] relative z-40">
         {/* Zone 1 + Breadcrumb: Clean Wordmark & Session Status */}
         <div className="flex items-center gap-4 min-w-0">
           <button
@@ -373,7 +409,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             aria-label="gather home"
           >
             <GatherLogo size={22} />
-            <span>
+            <span className="hidden sm:inline">
               gather<span className="text-[var(--accent)] ml-[1px]">.</span>
             </span>
           </button>
@@ -392,7 +428,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Zone 2/3: Watching Counter + Controls + User Dropdown */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <div className="hidden md:inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--ink-2)] pr-2 whitespace-nowrap">
             <Users className="w-3.5 h-3.5 text-[var(--ink-3)]" />
             <span className="font-mono-num font-semibold text-[var(--ink)]">
@@ -404,12 +440,14 @@ export const TopBar: React.FC<TopBarProps> = ({
           {onExitWatchPreview ? (
             <button type="button" onClick={onExitWatchPreview} className={hdrBtn}>
               <Settings className="w-3.5 h-3.5 text-[var(--ink-2)]" />
-              <span>Back to Studio</span>
+              <span className="hidden sm:inline">Back to Studio</span>
+              <span className="sm:hidden">Studio</span>
             </button>
           ) : (
             onLeaveWatch && (
-              <button type="button" onClick={onLeaveWatch} className={hdrBtn}>
-                <span>Exit Watch</span>
+              <button type="button" onClick={onLeaveWatch} className={hdrBtn} aria-label="Exit watch page">
+                <LogOut className="w-3.5 h-3.5 text-[var(--ink-2)] sm:hidden" />
+                <span className="hidden sm:inline">Exit Watch</span>
               </button>
             )
           )}
@@ -421,7 +459,9 @@ export const TopBar: React.FC<TopBarProps> = ({
               className="lg:hidden inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-[10px] gather-btn-primary text-[13px] font-semibold whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span className="font-mono-num">Bag ({bagCount})</span>
+              <span className="font-mono-num">
+                <span className="hidden sm:inline">Bag </span>({bagCount})
+              </span>
             </button>
           )}
 
@@ -435,7 +475,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     'inline-flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-[7px] text-[12.5px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
 
   return (
-    <header className="h-12 shrink-0 flex items-center justify-between gap-6 px-4 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md relative z-40">
+    <header className="h-12 shrink-0 flex items-center justify-between gap-2 sm:gap-6 px-2.5 sm:px-4 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md relative z-40">
       {/* Zone 1 + 2: Wordmark + Clean Breadcrumb */}
       <div className="flex items-center gap-4 min-w-0">
         <button
@@ -445,7 +485,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           aria-label="gather home"
         >
           <GatherLogo size={22} />
-          <span>
+          <span className="hidden sm:inline">
             gather<span className="text-[var(--accent)] ml-[1px]">.</span>
           </span>
         </button>
@@ -467,8 +507,31 @@ export const TopBar: React.FC<TopBarProps> = ({
           <span className="text-[var(--ink-3)]" aria-hidden="true">
             ·
           </span>
-          <span className="text-[12px] font-mono-num text-[var(--ink-3)] whitespace-nowrap">
-            {connState === 'online' ? `${viewerCount} watching` : 'Syncing'}
+          <span
+            className={`text-[12px] font-mono-num whitespace-nowrap inline-flex items-center gap-1.5 ${
+              connState === 'offline' ? 'text-[var(--warn)]' : 'text-[var(--ink-3)]'
+            }`}
+            title={
+              connState === 'offline'
+                ? 'Realtime server unreachable. You can rehearse locally, but guests and viewers cannot join until it reconnects.'
+                : undefined
+            }
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                connState === 'online'
+                  ? 'bg-[var(--ok)]'
+                  : connState === 'offline'
+                  ? 'bg-[var(--warn)]'
+                  : 'bg-[var(--ink-3)] animate-pulse'
+              }`}
+              aria-hidden="true"
+            />
+            {connState === 'online'
+              ? `${viewerCount} watching`
+              : connState === 'offline'
+              ? 'Local preview'
+              : 'Connecting…'}
           </span>
           {isRecording && (
             <>
@@ -484,13 +547,13 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Zone 3: Unboxed Ghost Actions + Primary Broadcast CTA */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <button
           type="button"
           onClick={onOpenCommandPalette}
           title="Command palette (Cmd/Ctrl + K)"
           aria-label="Command palette"
-          className={`hidden sm:inline-flex ${studioGhostBtn} px-2`}
+          className={`${studioGhostBtn} max-sm:hidden px-2`}
         >
           <Command className="w-3.5 h-3.5 text-[var(--ink-3)]" />
           <span className="font-mono-num text-[11.5px]">K</span>
@@ -518,7 +581,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           onClick={onOpenSettings}
           aria-label="Studio settings"
           title="Studio settings"
-          className="h-8 w-8 grid place-items-center rounded-[7px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          className="hidden sm:grid h-8 w-8 place-items-center rounded-[7px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
         </button>
@@ -527,7 +590,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           {renderUserMenu('ghost')}
         </div>
 
-        <span className="h-4 w-px bg-[var(--line-2)] mx-1.5 shrink-0" aria-hidden="true" />
+        <span className="hidden sm:block h-4 w-px bg-[var(--line-2)] mx-1.5 shrink-0" aria-hidden="true" />
 
         <button
           type="button"
