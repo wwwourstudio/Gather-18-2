@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AlertCircle,
   ArrowRight,
   Camera,
   CameraOff,
@@ -7,6 +8,7 @@ import {
   FlipHorizontal2,
   Gamepad2,
   ImagePlus,
+  LogIn,
   Mic,
   MicOff,
   Radio,
@@ -15,6 +17,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Trash2,
+  User,
   X,
 } from 'lucide-react';
 import { DEFAULT_VIDEO_FX } from '../constants/studioDefaults';
@@ -44,27 +47,6 @@ interface GreenRoomModalProps {
   }) => void;
   isNewStudio: boolean;
 }
-
-const GoogleMark: React.FC = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-    <path
-      fill="#4285F4"
-      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
-    />
-    <path
-      fill="#34A853"
-      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
-    />
-    <path
-      fill="#FBBC05"
-      d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
-    />
-    <path
-      fill="#EA4335"
-      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
-    />
-  </svg>
-);
 
 const DEFAULT_TITLES: Record<WatchMode, string> = {
   standard: 'Gather Live Broadcast',
@@ -210,19 +192,18 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
 
   if (!open) return null;
 
-  const initials =
-    name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((s) => s[0]?.toUpperCase() || '')
-      .join('') || 'G';
+  const trimmedName = name.trim();
+  const initials = trimmedName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
 
   const bgMode = fx.bgMode || (fx.blurBg ? 'blur' : 'natural');
   const activeMeter = micOn ? meterLevel : 0;
-  const activeSegments = Math.round((activeMeter / 100) * 12);
-  const meterDb = activeMeter > 2 ? Math.round(-48 + (activeMeter / 100) * 48) : -60;
   const voiceRingScale = 1 + (activeMeter / 100) * 0.22;
+  const cameraLive = camOn && !mediaUnavailable;
 
   const audioInputs = devices.filter((d) => d.kind === 'audioinput');
   const videoInputs = devices.filter((d) => d.kind === 'videoinput');
@@ -236,8 +217,9 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!trimmedName) return;
     onEnter({
-      name: name.trim() || 'Host',
+      name: trimmedName,
       avatarUrl,
       micOn,
       camOn,
@@ -249,77 +231,133 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
     });
   };
 
+  const handleAvatarFile = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') setAvatarUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Readiness: what the person still needs to sort out before going in.
+  const checks: Array<{ id: string; label: string; ok: boolean; detail: string }> = [
+    {
+      id: 'camera',
+      label: 'Camera',
+      ok: cameraLive || !camOn,
+      detail: mediaUnavailable ? 'No access yet' : camOn ? 'Looking good' : 'Off — your avatar shows instead',
+    },
+    {
+      id: 'mic',
+      label: 'Microphone',
+      ok: !mediaUnavailable,
+      detail: mediaUnavailable ? 'No access yet' : micOn ? (activeMeter > 6 ? 'We can hear you' : 'Say something to test') : 'Muted',
+    },
+    {
+      id: 'name',
+      label: 'Name',
+      ok: Boolean(trimmedName),
+      detail: trimmedName ? trimmedName : 'Add your name',
+    },
+  ];
+
   const inputCls =
-    'w-full h-9.5 px-3 rounded-[9px] bg-[var(--fill)] hover:bg-[var(--fill-hover)] border border-[var(--line-2)] text-[12.5px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:border-[var(--accent)] transition-colors';
+    'w-full h-10 px-3 rounded-[10px] gather-input-glass border border-[var(--line-2)] hover:border-[var(--ink-3)]/40 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:outline-none focus:border-[var(--accent)]';
+  const sectionLabel = 'text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-3)]';
+  const glassBtn = (on: boolean) =>
+    `h-10 w-10 sm:w-auto sm:px-3.5 rounded-full text-[12px] font-semibold inline-flex items-center justify-center gap-1.5 backdrop-blur-xl border transition-all whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
+      on ? 'bg-black/45 text-white border-white/20 hover:bg-black/65' : 'gather-btn-live border-transparent'
+    }`;
+
+  const FORMATS: Array<{ id: WatchMode; label: string; blurb: string; icon: React.ElementType }> = [
+    { id: 'standard', label: 'Broadcast', blurb: 'Q&A, polls and tips', icon: Radio },
+    { id: 'shop', label: 'Live Shop', blurb: 'Products and checkout', icon: ShoppingBag },
+    { id: 'gamer', label: 'Gaming', blurb: 'Predictions and clips', icon: Gamepad2 },
+  ];
+
+  const LOOKS = [
+    { id: 'natural', label: 'Natural' },
+    { id: 'blur', label: 'Soft focus' },
+    { id: 'dim', label: 'Spotlight' },
+  ] as const;
+
+  const SLIDERS = [
+    { key: 'brightness', label: 'Brightness', min: 60, max: 140 },
+    { key: 'contrast', label: 'Contrast', min: 60, max: 140 },
+    { key: 'saturation', label: 'Colour', min: 40, max: 160 },
+  ] as const;
+
+  const fxChanged =
+    fx.brightness !== 100 || fx.contrast !== 100 || fx.saturation !== 100 || bgMode !== 'natural';
 
   return (
     <div
-      className="fixed inset-0 z-50 gather-lightbox-scrim flex items-center justify-center p-3 sm:p-5 overflow-y-auto gather-scroll animate-gather-backdrop"
+      className="fixed inset-0 z-50 gather-lightbox-scrim flex items-stretch sm:items-center justify-center sm:p-5 animate-gather-backdrop"
       onClick={closeModal}
+      role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="green-room-heading"
+        aria-describedby="green-room-sub"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[940px] max-h-[92vh] overflow-y-auto gather-scroll rounded-[18px] gather-glass-elevated animate-gather-modal"
+        className="w-full max-w-[1040px] h-full sm:h-auto sm:max-h-[94vh] flex flex-col sm:rounded-[20px] gather-glass-elevated animate-gather-modal overflow-hidden"
       >
-        {/* Top Studio Lightbox Header */}
-        <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-3.5 border-b border-[var(--line)]">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="w-8 h-8 rounded-[9px] bg-[var(--accent-soft)] border border-[var(--accent-line)] grid place-items-center shrink-0">
-              <GatherLogo size={16} />
+        {/* Header */}
+        <header className="relative flex items-center justify-between gap-4 px-5 sm:px-6 h-16 border-b border-[var(--line)] shrink-0 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="absolute -top-16 -left-10 w-72 h-40 rounded-full bg-[var(--accent)]/20 blur-3xl pointer-events-none"
+          />
+          <div className="relative flex items-center gap-3 min-w-0">
+            <span className="w-9 h-9 rounded-[10px] bg-[var(--accent-soft)] border border-[var(--accent-line)] grid place-items-center shrink-0">
+              <GatherLogo size={17} />
             </span>
             <div className="min-w-0">
               <h2
                 id="green-room-heading"
-                className="font-display text-[15px] font-medium text-[var(--ink)] tracking-tight leading-tight"
+                className="font-display text-[16px] font-medium text-[var(--ink)] tracking-tight leading-tight"
               >
-                Green Room Pre-Check
+                {isNewStudio ? 'Set up your studio' : 'Get ready to join'}
               </h2>
-              <p className="text-[11px] text-[var(--ink-3)] font-mono-num mt-0.5 truncate">
-                Room {roomCode} · {isNewStudio ? 'Host Broadcast Setup' : 'Guest Check-In'} · $0 Platform Fees
+              <p id="green-room-sub" className="text-[12px] text-[var(--ink-3)] mt-0.5 truncate">
+                Check how you look and sound before you go in.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {!isSignedIn && onOpenAuth && (
-              <button
-                type="button"
-                onClick={onOpenAuth}
-                className="h-8 px-3 rounded-[8px] bg-[var(--fill)] hover:bg-[var(--fill-hover)] border border-[var(--line-2)] text-[11.5px] font-medium text-[var(--ink)] inline-flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
-              >
-                <GoogleMark />
-                <span className="hidden sm:inline">Sign in with Google</span>
-                <span className="sm:hidden">Sign in</span>
-              </button>
-            )}
+          <div className="relative flex items-center gap-2 shrink-0">
+            <span
+              className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-[var(--line-2)] bg-[var(--fill)] text-[11.5px] text-[var(--ink-2)]"
+              title="Room code"
+            >
+              <span className="text-[var(--ink-3)]">Room</span>
+              <span className="font-mono-num font-medium text-[var(--ink)] tracking-wider">{roomCode}</span>
+            </span>
             <button
               type="button"
               onClick={closeModal}
-              aria-label="Close green room"
-              className="h-8 w-8 grid place-items-center rounded-[8px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors cursor-pointer"
+              aria-label="Close"
+              className="h-9 w-9 grid place-items-center rounded-[9px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </header>
 
-        <form
-          onSubmit={handleJoin}
-          className="grid grid-cols-1 lg:grid-cols-[57%_43%] min-w-0"
-        >
-          {/* Left 57%: Confidence Monitor & Color Console */}
-          <div className="p-5 sm:p-6 space-y-4 min-w-0">
-            <div className="relative aspect-video rounded-[14px] overflow-hidden bg-[#060a14] border border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.85)]">
+        <form onSubmit={handleJoin} className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden gather-scroll">
+          {/* Left: preview + look */}
+          <div className="lg:w-[58%] p-5 sm:p-6 space-y-4 min-w-0 lg:overflow-y-auto gather-scroll">
+            <div className="gather-glow-rim relative aspect-video rounded-[16px] overflow-hidden bg-[#060a14] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.75)]">
               <video
                 ref={videoRef}
                 autoPlay
                 muted
                 playsInline
-                className={`w-full h-full object-cover transition-opacity duration-150 ${
-                  camOn && !mediaUnavailable ? 'opacity-100' : 'opacity-0'
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  cameraLive ? 'opacity-100' : 'opacity-0'
                 }`}
                 style={{
                   transform: fx.mirror ? 'scaleX(-1)' : 'none',
@@ -327,10 +365,9 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                 }}
               />
 
-              {/* Studio Backdrop Vignette Preview */}
-              {camOn && !mediaUnavailable && bgMode !== 'natural' && (
+              {cameraLive && bgMode !== 'natural' && (
                 <div
-                  className="absolute inset-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none transition-opacity duration-300"
                   style={{
                     background:
                       bgMode === 'dim'
@@ -340,51 +377,37 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                 />
               )}
 
-              {/* Subtle Optical Viewfinder Corner Brackets */}
-              <div aria-hidden="true" className="pointer-events-none absolute inset-3">
-                <span className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/25 rounded-tl-[2px]" />
-                <span className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white/25 rounded-tr-[2px]" />
-                <span className="absolute bottom-8 left-0 w-3 h-3 border-b border-l border-white/15 rounded-bl-[2px]" />
-                <span className="absolute bottom-8 right-0 w-3 h-3 border-b border-r border-white/15 rounded-br-[2px]" />
-              </div>
-
-              {/* Top Unboxed Optical Status Bar */}
-              <div className="absolute top-3 left-4 right-4 z-10 flex items-center justify-between gap-2 text-[10px] font-mono-num tracking-[0.08em] uppercase pointer-events-none">
-                <span className="inline-flex items-center gap-1.5 text-white/80">
+              {/* Status chip */}
+              <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between gap-2 pointer-events-none">
+                <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-black/45 backdrop-blur-xl border border-white/15 text-[11.5px] font-medium text-white">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      !mediaUnavailable && camOn
-                        ? 'bg-emerald-400'
-                        : micOn
-                        ? 'bg-[#4f6ef7]'
-                        : 'bg-rose-400'
+                      mediaUnavailable ? 'bg-amber-400' : cameraLive ? 'bg-emerald-400 animate-pulse' : 'bg-white/60'
                     }`}
+                    aria-hidden="true"
                   />
-                  <span>
-                    {camOn && !mediaUnavailable
-                      ? 'Optical Feed · 720p60'
-                      : 'Avatar Stage · Audio Ready'}
+                  {mediaUnavailable ? 'Waiting for access' : cameraLive ? 'Camera preview' : 'Camera off'}
+                </span>
+                {cameraLive && fx.mirror && (
+                  <span className="h-7 px-2.5 rounded-full bg-black/35 backdrop-blur-xl border border-white/10 text-[11px] text-white/80 inline-flex items-center">
+                    Mirrored for you only
                   </span>
-                </span>
-                <span className="text-white/50">
-                  {fx.mirror ? 'Mirrored' : 'Program Orientation'}
-                </span>
+                )}
               </div>
 
-              {/* Avatar / Audio-Reactive Stage (when camera is off or unavailable) */}
-              {(!camOn || mediaUnavailable) && (
+              {/* Camera off / no permission */}
+              {!cameraLive && (
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-3.5 p-4 text-center"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center"
                   style={{
                     background:
-                      'radial-gradient(circle at 50% 44%, rgba(47,107,240,0.22), rgba(8,12,24,0.96) 72%)',
+                      'radial-gradient(circle at 50% 42%, rgba(79,110,247,0.28), rgba(124,58,237,0.10) 45%, rgba(6,10,20,0.97) 78%)',
                   }}
                 >
                   <div className="relative grid place-items-center">
-                    {/* Audio-Reactive Pulse Halo behind Avatar */}
                     <span
                       aria-hidden="true"
-                      className="absolute w-24 h-24 rounded-full border border-[#4f6ef7]/35 transition-transform duration-100"
+                      className="absolute w-24 h-24 rounded-full border border-[#60a5fa]/40 transition-transform duration-100"
                       style={{
                         transform: `scale(${voiceRingScale})`,
                         opacity: micOn ? 0.45 + (activeMeter / 100) * 0.55 : 0.2,
@@ -392,7 +415,7 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                     />
                     <span
                       aria-hidden="true"
-                      className="absolute w-32 h-32 rounded-full border border-[#7c3aed]/20 transition-transform duration-150"
+                      className="absolute w-32 h-32 rounded-full border border-[#a78bfa]/25 transition-transform duration-150"
                       style={{
                         transform: `scale(${1 + (activeMeter / 100) * 0.3})`,
                         opacity: micOn ? 0.3 + (activeMeter / 100) * 0.45 : 0.12,
@@ -401,413 +424,403 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        alt={name}
+                        alt=""
                         referrerPolicy="no-referrer"
-                        className="relative z-10 w-18 h-18 rounded-full object-cover border border-[#4f6ef7] shadow-xl"
+                        className="relative z-10 w-20 h-20 rounded-full object-cover border-2 border-white/30 shadow-xl"
                       />
                     ) : (
-                      <div className="relative z-10 w-18 h-18 rounded-full gather-btn-primary font-display font-medium text-xl grid place-items-center shadow-xl">
-                        {initials}
+                      <div className="relative z-10 w-20 h-20 rounded-full gather-btn-primary font-display font-medium text-[22px] grid place-items-center shadow-xl">
+                        {initials || <User className="w-8 h-8" strokeWidth={1.6} aria-hidden="true" />}
                       </div>
                     )}
                   </div>
 
-                  <div className="space-y-1 max-w-[34ch]">
-                    <div className="text-[12px] font-medium text-white/90">
-                      {!camOn
-                        ? 'Camera paused — broadcast uses your studio avatar'
-                        : 'Camera & mic hardware not authorized yet'}
-                    </div>
-                    {mediaUnavailable && (
+                  {mediaUnavailable ? (
+                    <div className="space-y-2.5 max-w-[38ch]">
+                      <p className="text-[14px] font-medium text-white">We can&rsquo;t see your camera or mic yet</p>
+                      <p className="text-[12.5px] text-white/65 leading-relaxed">
+                        Allow access from the camera icon in your browser&rsquo;s address bar, then try again. You can
+                        also go in without them and use your avatar.
+                      </p>
                       <button
                         type="button"
                         onClick={() => setRetryCount((c) => c + 1)}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8ab4ff] hover:text-white transition-colors cursor-pointer"
+                        className="mt-1 h-9 px-4 rounded-full bg-white text-[#0b1426] text-[12.5px] font-semibold inline-flex items-center gap-1.5 hover:bg-white/90 transition-colors cursor-pointer"
                       >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Retry camera &amp; microphone check</span>
+                        <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+                        Try again
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <p className="text-[13px] font-medium text-white/85 max-w-[34ch]">
+                      Camera is off. Guests will see your avatar.
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Bottom Glass Hardware Dock */}
-              <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
+              {/* Bottom controls */}
+              <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setMicOn((v) => !v)}
                     aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
-                    className={`h-8 px-3 rounded-[8px] text-[11.5px] font-semibold inline-flex items-center gap-1.5 backdrop-blur-xl border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      micOn
-                        ? 'bg-black/60 text-white border-white/15 hover:bg-black/80'
-                        : 'gather-btn-live border-transparent'
-                    }`}
+                    aria-pressed={!micOn}
+                    className={glassBtn(micOn)}
                   >
-                    {micOn ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{micOn ? 'Mic on' : 'Muted'}</span>
+                    {micOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                    <span className="hidden sm:inline">{micOn ? 'Mic' : 'Muted'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setCamOn((v) => !v)}
                     aria-label={camOn ? 'Turn camera off' : 'Turn camera on'}
-                    className={`h-8 px-3 rounded-[8px] text-[11.5px] font-semibold inline-flex items-center gap-1.5 backdrop-blur-xl border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      camOn
-                        ? 'bg-black/60 text-white border-white/15 hover:bg-black/80'
-                        : 'gather-btn-live border-transparent'
-                    }`}
+                    aria-pressed={!camOn}
+                    className={glassBtn(camOn)}
                   >
-                    {camOn ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{camOn ? 'Cam on' : 'Cam off'}</span>
+                    {camOn ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
+                    <span className="hidden sm:inline">{camOn ? 'Camera' : 'Camera off'}</span>
                   </button>
                 </div>
 
-                {/* Live 12-Bar LED Audio Input Meter */}
-                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] bg-black/65 backdrop-blur-xl border border-white/15 min-w-0">
-                  <span className="hidden sm:inline text-[10px] font-mono-num tabular-nums text-white/70 w-9 text-right">
-                    {micOn ? `${meterDb}dB` : 'MUTE'}
-                  </span>
-                  <div className="flex items-center gap-0.5" aria-label="Microphone input level">
-                    {Array.from({ length: 12 }).map((_, idx) => {
-                      const lit = idx < activeSegments;
-                      const segColor =
-                        idx >= 10
-                          ? 'bg-[var(--live)]'
-                          : idx >= 7
-                          ? 'bg-[var(--warn)]'
-                          : 'bg-[var(--ok)]';
-                      return (
-                        <span
-                          key={idx}
-                          className={`w-1.5 h-2.5 rounded-[1px] transition-colors ${
-                            lit ? segColor : 'bg-white/14'
-                          }`}
-                        />
-                      );
-                    })}
+                <div
+                  className="flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-full bg-black/45 backdrop-blur-xl border border-white/15 min-w-0 w-[44%] max-w-[220px]"
+                  role="meter"
+                  aria-label="Microphone level"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={activeMeter}
+                >
+                  {micOn ? (
+                    <Mic className="w-3.5 h-3.5 text-white/70 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <MicOff className="w-3.5 h-3.5 text-white/50 shrink-0" aria-hidden="true" />
+                  )}
+                  <div className="relative flex-1 h-1.5 rounded-full bg-white/15 overflow-hidden">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-75"
+                      style={{
+                        width: `${Math.max(micOn ? 3 : 0, activeMeter)}%`,
+                        background: 'linear-gradient(90deg, #22c55e 0%, #84cc16 55%, #f59e0b 80%, #ef4444 100%)',
+                        backgroundSize: '220px 100%',
+                      }}
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Look & Color Grading Console */}
-            <div className="rounded-[12px] bg-[var(--fill)] border border-[var(--line)] p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-4 text-[11.5px]">
-                  {(
-                    [
-                      { id: 'natural', label: 'Natural' },
-                      { id: 'blur', label: 'Soft Blur' },
-                      { id: 'dim', label: 'Studio Dim' },
-                    ] as const
-                  ).map((mode) => {
-                    const active = bgMode === mode.id;
-                    return (
-                      <button
-                        key={mode.id}
-                        type="button"
-                        aria-selected={active}
-                        onClick={() =>
-                          setFx((p) => ({
-                            ...p,
-                            bgMode: mode.id,
-                            blurBg: mode.id === 'blur',
-                          }))
-                        }
-                        className={`pb-1 border-b transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                          active
-                            ? 'border-[var(--accent)] text-[var(--ink)] font-medium'
-                            : 'border-transparent text-[var(--ink-3)] hover:text-[var(--ink)]'
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center gap-2.5 text-[11px]">
+            {/* Look */}
+            <section aria-labelledby="gr-look" className="rounded-[14px] gather-card-obsidian p-4 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 id="gr-look" className={sectionLabel}>
+                  Your look
+                </h3>
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    aria-pressed={fx.mirror}
+                    role="switch"
+                    aria-checked={fx.mirror}
                     onClick={() => setFx((p) => ({ ...p, mirror: !p.mirror }))}
-                    className={`h-7 px-2.5 rounded-[7px] border inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      fx.mirror
-                        ? 'bg-[var(--accent-soft)] border-[var(--accent-line)] text-[var(--ink)] font-medium'
-                        : 'bg-transparent border-[var(--line)] text-[var(--ink-3)] hover:text-[var(--ink)]'
-                    }`}
+                    className="h-8 pl-2 pr-3 rounded-full border border-[var(--line-2)] bg-[var(--fill)] hover:bg-[var(--fill-hover)] text-[12px] text-[var(--ink-2)] inline-flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <FlipHorizontal2 className="w-3 h-3" />
-                    <span>Mirror</span>
+                    <span
+                      className={`relative w-7 h-4 rounded-full transition-colors ${
+                        fx.mirror ? 'bg-[var(--accent)]' : 'bg-[var(--line-2)]'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span
+                        className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-[left] duration-200 ${
+                          fx.mirror ? 'left-3.5' : 'left-0.5'
+                        }`}
+                      />
+                    </span>
+                    <FlipHorizontal2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    Mirror
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFx(DEFAULT_VIDEO_FX)}
-                    className="h-7 px-2 rounded-[7px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] inline-flex items-center gap-1 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                    disabled={!fxChanged}
+                    onClick={() => setFx((p) => ({ ...DEFAULT_VIDEO_FX, mirror: p.mirror }))}
+                    className="h-8 px-2.5 rounded-full text-[12px] text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] inline-flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-default disabled:hover:bg-transparent"
                   >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset</span>
+                    <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                    Reset
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs pt-1 border-t border-[var(--line)]">
-                <label className="space-y-1.5">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-[var(--ink-3)]">Brightness</span>
-                    <span className="font-mono-num tabular-nums text-[var(--ink-2)]">
-                      {fx.brightness}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={60}
-                    max={140}
-                    value={fx.brightness}
-                    onChange={(e) => setFx((p) => ({ ...p, brightness: Number(e.target.value) }))}
-                    className="gather-range w-full"
-                  />
-                </label>
-                <label className="space-y-1.5">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-[var(--ink-3)]">Contrast</span>
-                    <span className="font-mono-num tabular-nums text-[var(--ink-2)]">
-                      {fx.contrast}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={70}
-                    max={140}
-                    value={fx.contrast}
-                    onChange={(e) => setFx((p) => ({ ...p, contrast: Number(e.target.value) }))}
-                    className="gather-range w-full"
-                  />
-                </label>
-                <label className="space-y-1.5">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-[var(--ink-3)]">Color</span>
-                    <span className="font-mono-num tabular-nums text-[var(--ink-2)]">
-                      {fx.saturation}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={40}
-                    max={160}
-                    value={fx.saturation}
-                    onChange={(e) => setFx((p) => ({ ...p, saturation: Number(e.target.value) }))}
-                    className="gather-range w-full"
-                  />
-                </label>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Background">
+                {LOOKS.map((mode) => {
+                  const active = bgMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setFx((p) => ({ ...p, bgMode: mode.id, blurBg: mode.id === 'blur' }))}
+                      className={`gather-lift h-14 rounded-[11px] border text-[12.5px] font-medium flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        active
+                          ? 'bg-[var(--accent-soft)] border-[var(--accent-line)] text-[var(--ink)]'
+                          : 'bg-[var(--fill)] border-[var(--line)] text-[var(--ink-2)] hover:text-[var(--ink)] hover:border-[var(--line-2)]'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="w-8 h-4 rounded-[4px] border border-white/10"
+                        style={{
+                          background:
+                            mode.id === 'natural'
+                              ? 'linear-gradient(135deg,#64748b,#94a3b8)'
+                              : mode.id === 'blur'
+                              ? 'radial-gradient(circle at 50% 50%, #94a3b8 20%, #334155 90%)'
+                              : 'radial-gradient(circle at 50% 50%, #cbd5e1 15%, #0b1222 80%)',
+                        }}
+                      />
+                      {mode.label}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-5 gap-y-3">
+                {SLIDERS.map((sl) => {
+                  const value = fx[sl.key];
+                  const delta = value - 100;
+                  return (
+                    <label key={sl.key} className="space-y-2">
+                      <span className="flex justify-between text-[12px]">
+                        <span className="text-[var(--ink-2)]">{sl.label}</span>
+                        <span className="font-mono-num tabular-nums text-[var(--ink-3)]">
+                          {delta === 0 ? 'Auto' : `${delta > 0 ? '+' : ''}${delta}`}
+                        </span>
+                      </span>
+                      <input
+                        type="range"
+                        min={sl.min}
+                        max={sl.max}
+                        value={value}
+                        onChange={(e) => setFx((p) => ({ ...p, [sl.key]: Number(e.target.value) }))}
+                        onDoubleClick={() => setFx((p) => ({ ...p, [sl.key]: 100 }))}
+                        className="gather-range w-full"
+                        aria-valuetext={delta === 0 ? 'Default' : `${delta > 0 ? 'plus' : 'minus'} ${Math.abs(delta)}`}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section aria-labelledby="gr-devices" className="rounded-[14px] gather-card-obsidian p-4 space-y-3">
+              <h3 id="gr-devices" className={sectionLabel}>
+                Devices
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="flex items-center gap-2.5 min-w-0">
+                <span className="w-10 h-10 rounded-[10px] bg-[var(--fill)] border border-[var(--line)] grid place-items-center shrink-0">
+                  <Mic className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
+                </span>
+                <span className="sr-only">Microphone</span>
+                <select value={selectedMic} onChange={(e) => setSelectedMic(e.target.value)} className={inputCls}>
+                  <option value="">Default microphone</option>
+                  {audioInputs.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Microphone ${d.deviceId.slice(0, 5)}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2.5 min-w-0">
+                <span className="w-10 h-10 rounded-[10px] bg-[var(--fill)] border border-[var(--line)] grid place-items-center shrink-0">
+                  <Camera className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
+                </span>
+                <span className="sr-only">Camera</span>
+                <select value={selectedCam} onChange={(e) => setSelectedCam(e.target.value)} className={inputCls}>
+                  <option value="">Default camera</option>
+                  {videoInputs.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Camera ${d.deviceId.slice(0, 5)}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              </div>
+            </section>
           </div>
 
-          {/* Right 43%: Format Architecture, Identity & Hardware Routing */}
-          <div className="p-5 sm:p-6 flex flex-col justify-between gap-5 border-t lg:border-t-0 lg:border-l border-[var(--line)] min-w-0">
-            <div className="space-y-4">
+          {/* Right: show, you, launch */}
+          <div className="lg:w-[42%] flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--line)] min-w-0 lg:min-h-0">
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto gather-scroll p-5 sm:p-6 space-y-6">
               {isNewStudio && (
-                <div className="space-y-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-3)] block">
-                    Watch Page Format
-                  </span>
-                  <div
-                    className="grid grid-cols-3 gap-2"
-                    role="tablist"
-                    aria-label="Watch Page Format"
-                  >
-                    {(
-                      [
-                        { id: 'standard', label: 'Broadcast', icon: Radio },
-                        { id: 'shop', label: 'Live Shop', icon: ShoppingBag },
-                        { id: 'gamer', label: 'Gaming', icon: Gamepad2 },
-                      ] as Array<{
-                        id: WatchMode;
-                        label: string;
-                        icon: React.ComponentType<{ className?: string }>;
-                      }>
-                    ).map((opt) => {
+                <section aria-labelledby="gr-show" className="space-y-3">
+                  <h3 id="gr-show" className={sectionLabel}>
+                    Your show
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Watch page format">
+                    {FORMATS.map((opt) => {
                       const Icon = opt.icon;
                       const active = watchMode === opt.id;
                       return (
                         <button
                           key={opt.id}
                           type="button"
-                          role="tab"
-                          aria-selected={active}
+                          role="radio"
+                          aria-checked={active}
                           onClick={() => handleSelectMode(opt.id)}
-                          className={`p-2.5 rounded-[10px] border text-left transition-all cursor-pointer ${
+                          className={`gather-lift relative p-3 rounded-[12px] border text-left cursor-pointer overflow-hidden ${
                             active
-                              ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--ink)] shadow-[0_0_0_1px_rgba(79,110,247,0.3)]'
-                              : 'bg-[var(--fill)] border-[var(--line)] text-[var(--ink-3)] hover:text-[var(--ink)] hover:border-[var(--line-2)]'
+                              ? 'bg-[var(--accent-soft)] border-[var(--accent-line)] text-[var(--ink)]'
+                              : 'bg-[var(--fill)] border-[var(--line)] text-[var(--ink-2)] hover:text-[var(--ink)] hover:border-[var(--line-2)]'
                           }`}
                         >
+                          {active && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute -top-8 -right-8 w-20 h-20 rounded-full bg-[var(--accent)]/30 blur-2xl"
+                            />
+                          )}
                           <Icon
-                            className={`w-3.5 h-3.5 mb-1.5 ${
-                              active ? 'text-[var(--accent-text)]' : ''
-                            }`}
+                            className={`relative w-4 h-4 mb-2 ${active ? 'text-[var(--accent-text)]' : 'text-[var(--ink-3)]'}`}
+                            strokeWidth={1.75}
+                            aria-hidden="true"
                           />
-                          <div className="text-[11.5px] font-semibold whitespace-nowrap">
-                            {opt.label}
-                          </div>
+                          <span className="relative block text-[12.5px] font-semibold whitespace-nowrap">{opt.label}</span>
+                          <span className="relative block text-[11px] text-[var(--ink-3)] leading-snug mt-0.5">{opt.blurb}</span>
                         </button>
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-[var(--ink-3)] leading-relaxed">
-                    {watchMode === 'standard'
-                      ? 'Cinema Watch Page with live Q&A, audience polls, and 0%-fee direct Super Chats.'
-                      : watchMode === 'shop'
-                      ? 'Interactive product runway & 1-click Express Bag checkout right beside the video.'
-                      : 'Squad queue, live map predictions, rig showcase & instant 30s replay clips.'}
-                  </p>
-                </div>
-              )}
-
-              {isNewStudio && (
-                <label className="block space-y-1.5">
-                  <span className="text-[11.5px] font-medium text-[var(--ink-2)]">Show title</span>
-                  <input
-                    type="text"
-                    value={studioTitle}
-                    onChange={(e) => {
-                      setTitleEdited(true);
-                      setStudioTitle(e.target.value);
-                    }}
-                    placeholder="My Live Broadcast"
-                    className={inputCls}
-                  />
-                </label>
-              )}
-
-              {/* Display Name + Integrated Off-Cam Avatar Upload */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="greenroom-display-name"
-                    className="text-[11.5px] font-medium text-[var(--ink-2)]"
-                  >
-                    Your display name
+                  <label className="block space-y-1.5">
+                    <span className="text-[12px] font-medium text-[var(--ink-2)]">Show title</span>
+                    <input
+                      type="text"
+                      value={studioTitle}
+                      onChange={(e) => {
+                        setTitleEdited(true);
+                        setStudioTitle(e.target.value);
+                      }}
+                      placeholder="Name your show"
+                      maxLength={80}
+                      className={inputCls}
+                    />
                   </label>
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-[11px] font-medium text-[var(--accent-text)] hover:underline inline-flex items-center gap-1 cursor-pointer">
-                      <ImagePlus className="w-3 h-3" />
-                      <span>{avatarUrl ? 'Replace avatar' : 'Upload avatar'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              if (typeof reader.result === 'string') setAvatarUrl(reader.result);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                    </label>
-                    {avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setAvatarUrl(undefined)}
-                        aria-label="Remove avatar photo"
-                        className="text-[var(--ink-3)] hover:text-[var(--danger)] cursor-pointer p-0.5"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                </section>
+              )}
+
+              <section aria-labelledby="gr-you" className="space-y-3">
+                <h3 id="gr-you" className={sectionLabel}>
+                  You
+                </h3>
+                <div className="flex items-center gap-3">
+                  <label
+                    className="group relative w-12 h-12 rounded-full shrink-0 cursor-pointer focus-within:ring-2 focus-within:ring-[var(--accent)]"
+                    title={avatarUrl ? 'Change photo' : 'Add a photo'}
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border border-[var(--line-2)]" />
+                    ) : (
+                      <span className="w-12 h-12 rounded-full gather-btn-primary font-display font-medium text-[15px] grid place-items-center">
+                        {initials || <User className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />}
+                      </span>
                     )}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[var(--bg)] border border-[var(--line-2)] grid place-items-center text-[var(--ink-2)] group-hover:text-[var(--ink)]">
+                      <ImagePlus className="w-3 h-3" aria-hidden="true" />
+                    </span>
+                    <span className="sr-only">{avatarUrl ? 'Change photo' : 'Add a photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        handleAvatarFile(e.target.files?.[0]);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <label htmlFor="greenroom-display-name" className="block text-[12px] font-medium text-[var(--ink-2)]">
+                      Display name
+                    </label>
+                    <input
+                      id="greenroom-display-name"
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="How guests will see you"
+                      autoComplete="name"
+                      autoFocus={!initialName && typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches}
+                      maxLength={40}
+                      className={inputCls}
+                    />
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[12px]">
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={name}
-                      className="w-9.5 h-9.5 rounded-[9px] object-cover border border-[var(--accent)] shrink-0"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setAvatarUrl(undefined)}
+                      className="inline-flex items-center gap-1 text-[var(--ink-3)] hover:text-[var(--danger)] cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      Remove photo
+                    </button>
                   ) : (
-                    <span className="w-9.5 h-9.5 rounded-[9px] bg-[var(--fill-hover)] border border-[var(--line-2)] text-[11px] font-display font-medium text-[var(--ink)] grid place-items-center shrink-0">
-                      {initials}
-                    </span>
+                    <span className="text-[var(--ink-3)]">Your photo shows when your camera is off.</span>
                   )}
-                  <input
-                    id="greenroom-display-name"
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name, as guests will see it"
-                    autoComplete="name"
-                    maxLength={40}
-                    className={inputCls}
-                  />
+                  {!isSignedIn && onOpenAuth && (
+                    <button
+                      type="button"
+                      onClick={onOpenAuth}
+                      className="inline-flex items-center gap-1 font-medium text-[var(--accent-text)] hover:underline cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
+                      Sign in to save
+                    </button>
+                  )}
                 </div>
-              </div>
+              </section>
 
-              {/* Hardware Routing Matrix */}
-              <div className="pt-2 border-t border-[var(--line)] space-y-2.5">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold uppercase tracking-[0.08em] text-[var(--ink-3)]">
-                    Audio &amp; Video Routing
-                  </span>
-                  <span className="inline-flex items-center gap-1 font-mono-num text-[10.5px] text-emerald-400">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>{mediaUnavailable ? 'Standby Mode' : 'Hardware Synced'}</span>
-                  </span>
-                </div>
-
-                <label className="block space-y-1">
-                  <span className="text-[11px] text-[var(--ink-3)]">Microphone</span>
-                  <select
-                    value={selectedMic}
-                    onChange={(e) => setSelectedMic(e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="">System default microphone</option>
-                    {audioInputs.map((d) => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Mic ${d.deviceId.slice(0, 5)}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block space-y-1">
-                  <span className="text-[11px] text-[var(--ink-3)]">Camera</span>
-                  <select
-                    value={selectedCam}
-                    onChange={(e) => setSelectedCam(e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="">System default camera</option>
-                    {videoInputs.map((d) => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Camera ${d.deviceId.slice(0, 5)}`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
             </div>
 
-            {/* Enter / Launch Action */}
-            <div className="space-y-2.5 pt-2">
+            {/* Ready check + launch (stays visible) */}
+            <div className="sticky bottom-0 lg:static shrink-0 border-t border-[var(--line)] p-5 sm:p-6 pt-4 space-y-3.5 bg-[var(--elevated-header)] lg:bg-[var(--elevated-header)]/60 backdrop-blur-xl pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <ul className="hidden min-[400px]:grid grid-cols-3 gap-2" aria-label="Ready check">
+                {checks.map((c) => (
+                  <li
+                    key={c.id}
+                    className={`rounded-[10px] border px-2.5 py-2 min-w-0 ${
+                      c.ok ? 'border-[var(--line)] bg-[var(--fill)]' : 'border-[var(--warn)]/40 bg-[var(--warn)]/10'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--ink)]">
+                      {c.ok ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[var(--ok)] shrink-0" aria-hidden="true" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5 text-[var(--warn)] shrink-0" aria-hidden="true" />
+                      )}
+                      {c.label}
+                    </span>
+                    <span className="block text-[11px] text-[var(--ink-3)] truncate mt-0.5">{c.detail}</span>
+                  </li>
+                ))}
+              </ul>
               <button
                 type="submit"
-                className="group w-full h-11 rounded-[10px] gather-btn-primary text-[13.5px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                disabled={!trimmedName}
+                className="group w-full h-12 rounded-[12px] gather-btn-primary text-[14px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
               >
-                <span>{isNewStudio ? 'Launch Studio' : 'Enter Green Room'}</span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                <span>{isNewStudio ? 'Open my studio' : 'Join now'}</span>
+                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
               </button>
-              <p className="inline-flex w-full items-center justify-center gap-1.5 text-[11px] text-[var(--ink-3)]">
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--ink-3)] shrink-0" />
-                <span>Locked rooms hold guests cleanly in the Waiting Lobby until admitted.</span>
+              <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-[var(--ink-3)] text-center">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                {isNewStudio
+                  ? 'You go live only when you press Go Live.'
+                  : 'The host will let you in from the waiting room.'}
               </p>
             </div>
           </div>
