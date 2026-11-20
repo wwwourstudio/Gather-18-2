@@ -305,7 +305,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
   };
 
   return (
-    <div className="relative w-full min-w-0 pt-11 pb-11 sm:pt-12 sm:pb-12 animate-gather-stage">
+    <div className="gather-mock relative w-full min-w-0 pt-11 pb-11 sm:pt-12 sm:pb-12 [@media(min-width:1024px)_and_(max-height:800px)]:pt-10 [@media(min-width:1024px)_and_(max-height:800px)]:pb-10 animate-gather-stage">
       {/* Live 60fps Audio Pulse Rings & Polar Frequency Visualizer */}
       <AudioPulseRings active={demoMicOn} pulseTrigger={streamCursor} />
 
@@ -336,7 +336,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
       </button>
 
       {/* Main Obsidian Studio Console Window */}
-      <div className="relative z-10 w-full rounded-[16px] border border-white/[0.11] bg-[#080c17]/95 backdrop-blur-2xl shadow-[0_32px_90px_-24px_rgba(0,0,0,0.9)] overflow-hidden text-white">
+      <div className="gather-glow-rim relative z-10 w-full rounded-[16px] border border-white/[0.11] bg-[#080c17]/95 backdrop-blur-2xl shadow-[0_32px_90px_-24px_rgba(0,0,0,0.9)] overflow-hidden text-white">
         {/* Window Top Chrome */}
         <div className="h-10 px-4 border-b border-white/[0.07] grid grid-cols-3 items-center">
           {/* Left Window Traffic Dots */}
@@ -369,7 +369,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-[68%_32%] min-w-0">
           {/* Broadcast Stage Column */}
           <div className="p-3 sm:p-3.5 min-w-0">
-            <div className="relative w-full aspect-[16/10] rounded-[10px] overflow-hidden bg-[#060913]">
+            <div className="mock-video relative w-full aspect-[16/10] rounded-[10px] overflow-hidden bg-[#060913]">
               {/* Split Duo Scene */}
               {stageLayout === 'duo' && (
                 <div className="w-full h-full grid grid-cols-2 gap-[2%]">
@@ -626,11 +626,11 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                             <span className="text-[10px] font-semibold text-white truncate">
                               {msg.name}
                             </span>
-                            <span className="text-[8.5px] text-[#bef264]/80 truncate">
+                            <span className="text-[8.5px] text-lime-700/80 dark:text-[#bef264]/80 truncate">
                               {msg.meta}
                             </span>
                           </div>
-                          <span className="text-[10.5px] font-bold font-mono-num tabular-nums text-[#bef264] shrink-0">
+                          <span className="text-[10.5px] font-bold font-mono-num tabular-nums text-lime-700 dark:text-[#bef264] shrink-0">
                             {msg.amount}
                           </span>
                         </div>
@@ -648,12 +648,12 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                       >
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <ShoppingBag className="w-3 h-3 text-emerald-300 shrink-0" />
+                            <ShoppingBag className="w-3 h-3 text-emerald-600 dark:text-emerald-300 shrink-0" />
                             <span className="text-[9.5px] font-semibold text-white truncate">
                               {msg.meta}
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-bold font-mono-num tabular-nums text-emerald-300 shrink-0">
+                          <span className="text-[9.5px] font-bold font-mono-num tabular-nums text-emerald-600 dark:text-emerald-300 shrink-0">
                             {msg.amount}
                           </span>
                         </div>
@@ -663,7 +663,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                             <button
                               type="button"
                               onClick={() => handleActionClick(msg)}
-                              className="px-1.5 py-0.5 rounded-[5px] bg-emerald-400/20 hover:bg-emerald-400/35 border border-emerald-400/35 text-[8.5px] font-semibold text-emerald-200 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+                              className="px-1.5 py-0.5 rounded-[5px] bg-emerald-400/20 hover:bg-emerald-400/35 border border-emerald-400/35 text-[8.5px] font-semibold text-emerald-700 dark:text-emerald-200 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
                             >
                               {claimed ? (
                                 <span className="inline-flex items-center gap-0.5">
@@ -688,9 +688,9 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
                             {msg.kind === 'gamer_queue' ? (
-                              <Gamepad2 className="w-3 h-3 text-violet-300 shrink-0" />
+                              <Gamepad2 className="w-3 h-3 text-violet-600 dark:text-violet-300 shrink-0" />
                             ) : (
-                              <Flame className="w-3 h-3 text-amber-300 shrink-0" />
+                              <Flame className="w-3 h-3 text-amber-600 dark:text-amber-300 shrink-0" />
                             )}
                             <span className="text-[9.5px] font-semibold text-white truncate">
                               {msg.name} · {msg.meta}
@@ -700,7 +700,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                             <button
                               type="button"
                               onClick={() => handleActionClick(msg)}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-violet-500/25 hover:bg-violet-500/40 border border-violet-400/35 text-[8.5px] font-semibold text-violet-100 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-violet-500/25 hover:bg-violet-500/40 border border-violet-400/35 text-[8.5px] font-semibold text-violet-700 dark:text-violet-100 whitespace-nowrap shrink-0 cursor-pointer transition-colors"
                             >
                               <Users className="w-2.5 h-2.5" />
                               <span>{claimed ? 'Queued' : msg.actionLabel}</span>
@@ -769,7 +769,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
                   onChange={(e) => setChatDraft(e.target.value)}
                   placeholder="Say something..."
                   aria-label="Send a demo chat message"
-                  className="flex-1 min-w-0 h-7 px-2.5 rounded-[7px] bg-white/[0.04] border border-white/[0.08] focus:border-[#4f6ef7] text-[10px] text-white placeholder:text-white/35 focus:outline-none"
+                  className="flex-1 min-w-0 h-7 px-2.5 rounded-[7px] bg-white/[0.04] border border-white/[0.08] focus:border-[#4f6ef7] text-[10px] text-white placeholder:text-[var(--ink-3)] focus:outline-none"
                 />
                 {chatDraft.trim() && (
                   <button
@@ -796,7 +796,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
               className={`w-8 h-8 rounded-[8px] border grid place-items-center transition-colors cursor-pointer ${
                 demoMicOn
                   ? 'bg-white/[0.04] border-white/[0.1] text-white/80 hover:bg-white/[0.08]'
-                  : 'bg-rose-500/15 border-rose-500/35 text-rose-300'
+                  : 'bg-rose-500/15 border-rose-500/35 text-rose-600 dark:text-rose-300'
               }`}
             >
               {demoMicOn ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
@@ -836,7 +836,7 @@ export const LandingStageShowcase: React.FC<LandingStageShowcaseProps> = ({
           <button
             type="button"
             onClick={() => onOpenWatchDemo('standard')}
-            className="h-8 px-3.5 rounded-[8px] bg-[#2a121a] hover:bg-[#3a1723] border border-rose-500/20 text-[10.5px] font-semibold text-rose-300/90 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="h-8 px-3.5 rounded-[8px] bg-rose-100 hover:bg-rose-200 dark:bg-[#2a121a] dark:hover:bg-[#3a1723] border border-rose-500/20 text-[10.5px] font-semibold text-rose-700 dark:text-rose-300/90 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             End stream
           </button>

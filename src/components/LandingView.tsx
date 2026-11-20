@@ -3,7 +3,6 @@ import { ArrowRight, Trash2 } from 'lucide-react';
 import { ScheduledShow, WatchMode } from '../types/studio';
 import { GatherLogo } from './GatherLogo';
 import { LandingStageShowcase } from './landing/LandingStageShowcase';
-import { LandingSections } from './landing/LandingSections';
 
 interface LandingViewProps {
   scheduledShows: ScheduledShow[];
@@ -43,9 +42,10 @@ export const LandingView: React.FC<LandingViewProps> = ({
   };
 
   return (
-    <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden gather-scroll animate-gather-panel scroll-smooth">
-      {/* Hero fills the first screen and centres itself; content below it scrolls normally. */}
-      <section className="w-[90%] max-w-[1360px] mx-auto min-h-full flex flex-col justify-center py-8 sm:py-10 lg:py-12">
+    <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden gather-scroll animate-gather-panel">
+      {/* Single-screen homepage: the hero centres itself in the viewport. On small screens,
+          where it cannot fit, the page scrolls instead of clipping the top. */}
+      <section className="w-[90%] max-w-[1360px] mx-auto min-h-full flex flex-col justify-center overflow-clip py-6 sm:py-8 lg:py-4">
         <div className="grid grid-cols-1 lg:grid-cols-[44%_56%] gap-8 lg:gap-0 items-center">
           {/* Left Column: Clean Editorial Value Proposition */}
           <div className="flex flex-col items-start gap-5 xl:gap-6 lg:pr-[6%]">
@@ -67,7 +67,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
             >
               <h1 className="font-display text-[clamp(2.5rem,4.3vw,4.15rem)] font-normal leading-[1.03] tracking-[-0.032em] text-balance">
                 <span className="block text-[var(--ink)]">Your show.</span>
-                <span className="block text-[var(--ink-2)]">Live, together.</span>
+                <span className="block gather-headline-flow pb-[0.06em]">Live, together.</span>
               </h1>
 
               <p className="text-[15.5px] font-normal leading-[1.6] text-[var(--ink-2)] max-w-[44ch]">
@@ -111,7 +111,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               </label>
               <form
                 onSubmit={handleJoinSubmit}
-                className="h-12 pl-4 pr-1.5 rounded-[10px] bg-[var(--fill)] border border-[var(--line-2)] focus-within:border-[var(--accent)] flex items-center gap-2 transition-colors"
+                className="h-12 pl-4 pr-1.5 rounded-[10px] gather-input-glass border border-[var(--line-2)] focus-within:border-[var(--accent)] flex items-center gap-2"
               >
                 <input
                   id="gather-join-code"
@@ -193,12 +193,6 @@ export const LandingView: React.FC<LandingViewProps> = ({
           <LandingStageShowcase userName={userName} onOpenWatchDemo={onOpenWatchDemo} />
         </div>
       </section>
-
-      <LandingSections
-        onCreateStudio={(mode) => onCreateStudio(mode || 'standard')}
-        onOpenWatchDemo={onOpenWatchDemo}
-        onOpenSchedule={onOpenSchedule}
-      />
     </main>
   );
 };

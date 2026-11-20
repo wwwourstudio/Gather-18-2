@@ -2053,7 +2053,7 @@ export default function App() {
     <div
       className={`h-[100dvh] flex flex-col overflow-hidden ${
         viewMode === 'studio'
-          ? 'bg-[var(--bg)] p-0 gap-0'
+          ? 'bg-[var(--bg)] gather-aurora-soft p-0 gap-0'
           : 'gather-backdrop p-2.5 gap-2.5'
       }`}
     >
@@ -2210,7 +2210,7 @@ export default function App() {
             >
               {/* Left Column: Stage Viewport + Hairline-Divided Scene Deck */}
               <div className="min-w-0 lg:min-h-0 grid grid-rows-[auto_auto] lg:grid-rows-[minmax(0,1fr)_auto] gap-0 relative">
-                <div className="relative lg:min-h-0 flex flex-col gap-2.5 bg-[var(--bg-2)]/70 dark:bg-[#03060e] px-4 py-3 sm:px-6 sm:py-4">
+                <div className="relative lg:min-h-0 flex flex-col gap-2.5 bg-[var(--bg-2)]/60 dark:bg-[#03060e]/70 px-4 py-3 sm:px-6 sm:py-4">
                   {/* Eye-Line Host-Only Teleprompter (Docked cleanly above stage, zero video overlap) */}
                   <TeleprompterOverlay
                     visible={teleprompterOpen}
@@ -2245,7 +2245,7 @@ export default function App() {
                     }}
                   />
 
-                  <div className="h-[min(58vw,62vh)] lg:h-auto lg:flex-1 min-h-0">
+                  <div className="gather-stage-halo h-[min(58vw,62vh)] lg:h-auto lg:flex-1 min-h-0">
                     <StageCanvas
                       room={activeRoom}
                       localClientId={clientId}

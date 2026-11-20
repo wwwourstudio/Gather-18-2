@@ -358,29 +358,6 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
 
         {/* Zone 2/3: Live Demo Action + Compact Account / Theme Switcher */}
-        <nav className="hidden md:flex items-center gap-6 flex-1 justify-center" aria-label="Sections">
-          {[
-            ['Features', 'features'],
-            ['Formats', 'formats'],
-            ['How it works', 'how-it-works'],
-          ].map(([label, id]) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              onClick={(e) => {
-                const el = document.getElementById(id);
-                if (el) {
-                  e.preventDefault();
-                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="text-[13px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors whitespace-nowrap rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
-
         <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           {onOpenWatchDemo && (
             <button
@@ -399,7 +376,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   if (mode === 'watch') {
     return (
-      <header className="w-full h-[56px] shrink-0 flex items-center justify-between gap-3 sm:gap-6 px-3 sm:px-5 border-b border-[var(--line)] relative z-40">
+      <header className="w-full h-[56px] shrink-0 flex items-center justify-between gap-3 sm:gap-6 px-3 sm:px-5 border border-[var(--line)] rounded-[14px] gather-header-glass relative z-40">
         {/* Zone 1 + Breadcrumb: Clean Wordmark & Session Status */}
         <div className="flex items-center gap-4 min-w-0">
           <button
@@ -596,7 +573,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           type="button"
           onClick={onOpenGoLive}
           className={`inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-[7px] text-[12.5px] font-medium whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
-            isLive ? 'gather-btn-live' : 'gather-btn-primary'
+            isLive ? 'gather-btn-live gather-live-glow' : 'gather-btn-primary'
           }`}
         >
           <Radio className="w-3.5 h-3.5" />
