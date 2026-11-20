@@ -518,7 +518,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = ({
                 if (file) onDropMediaFile(file);
               }
         }
-        className={isVertical ? 'gather-stage-frame-vertical' : 'gather-stage-frame'}
+        className={`${isVertical ? 'gather-stage-frame-vertical' : 'gather-stage-frame'} gather-glow-rim`}
       >
         <canvas
           ref={canvasRef}

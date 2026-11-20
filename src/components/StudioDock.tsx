@@ -62,9 +62,9 @@ const ScenePreviewThumb: React.FC<{
   elements?: CustomStageElement[];
   bannerVisible?: boolean;
 }> = ({ id, elements, bannerVisible = true }) => {
-  const slotCls = 'absolute rounded-[2px] bg-[#e2ecff]/82';
-  const mediaCls = 'absolute rounded-[2px] bg-[#38bdf8]/78';
-  const bannerCls = 'absolute left-[7%] bottom-[8%] w-[46%] h-[9%] rounded-[1.5px] bg-[#2f6bf0]';
+  const slotCls = 'absolute rounded-[3px] gather-sc-slot';
+  const mediaCls = 'absolute rounded-[3px] gather-sc-media';
+  const bannerCls = 'absolute left-[7%] bottom-[8%] w-[46%] h-[9%] rounded-[2px] gather-sc-banner';
 
   if (elements && elements.length > 0) {
     return (
@@ -72,11 +72,7 @@ const ScenePreviewThumb: React.FC<{
         {elements.slice(0, 8).map((el, i) => {
           const isMedia = el.kind === 'media';
           const isAccent = el.kind === 'clock' || el.kind === 'qr';
-          const bg = isMedia
-            ? 'bg-[#38bdf8]/78'
-            : isAccent
-            ? 'bg-[#34d399]/75'
-            : 'bg-[#e2ecff]/82';
+          const bg = isMedia ? 'gather-sc-media' : isAccent ? 'bg-[#34d399]/80' : 'gather-sc-slot';
           return (
             <i
               key={el.id || i}
@@ -350,20 +346,18 @@ export const SceneDeck: React.FC<SceneDeckProps> = ({
   };
 
   const deckTabBtn = (active: boolean, highlightClass = '') =>
-    `inline-flex items-center gap-1.5 -mb-[7px] pb-[7px] border-b text-[12px] whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+    `gather-pill-tab inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] whitespace-nowrap shrink-0 cursor-pointer ${
       active
-        ? 'border-[var(--accent)] text-[var(--ink)] font-medium'
-        : `border-transparent font-normal ${
-            highlightClass || 'text-[var(--ink-3)] hover:text-[var(--ink)]'
-          }`
+        ? 'is-active text-[var(--ink)] font-medium'
+        : `font-normal ${highlightClass || 'text-[var(--ink-3)] hover:text-[var(--ink)]'}`
     }`;
 
   return (
-    <div className="bg-[var(--bg)] px-4 pt-2 pb-2.5 space-y-2.5 shrink-0 min-w-0">
-      {/* Unified Single-Row Deck Header (Underline Tabs Left · Inline Transition Controls Right) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] pb-1.5 min-h-[30px]">
+    <div className="gather-deck px-3 sm:px-4 pt-2.5 pb-3 space-y-2.5 shrink-0 min-w-0">
+      {/* Deck header: pill tabs left, transition controls right */}
+      <div className="flex flex-wrap items-center justify-between gap-3 min-h-[32px]">
         <div
-          className="flex items-center gap-4 overflow-x-auto gather-scroll pr-2"
+          className="gather-pill-tabs flex items-center gap-0.5 overflow-x-auto gather-scroll"
           role="tablist"
           aria-label="Studio deck"
         >
@@ -506,7 +500,7 @@ export const SceneDeck: React.FC<SceneDeckProps> = ({
 
         <div className="flex items-center gap-1.5 text-xs shrink-0">
           {deckTab === 'scenes' && isHost && !collapsed && (
-            <div className="hidden sm:flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-0.5 gather-pill-tabs">
               <button
                 type="button"
                 role="switch"
@@ -822,25 +816,32 @@ export const SceneDeck: React.FC<SceneDeckProps> = ({
                     onBlur={() => setHoveredSceneId((prev) => (prev === tpl.id ? null : prev))}
                     onClick={() => handleSceneTrigger(tpl.id)}
                     title={smartHint ? `Smart: ${smartHint.reason}` : tpl.description}
-                    className={`shrink-0 w-[116px] p-1 rounded-[8px] border flex flex-col justify-between gap-1 text-left transition-all cursor-pointer gather-card-hover ${
+                    className={`gather-scene-card shrink-0 w-[128px] p-1.5 rounded-[12px] border flex flex-col gap-1.5 text-left cursor-pointer ${
                       active
-                        ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--ink)]'
-                        : 'bg-[var(--fill)]/75 hover:bg-[var(--fill-hover)] border-[var(--line)] hover:border-[var(--line-2)] text-[var(--ink-2)] hover:text-[var(--ink)]'
+                        ? 'is-active text-[var(--ink)]'
+                        : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
                     }`}
                   >
-                    <ScenePreviewThumb id={tpl.id} />
-                    <div className="flex items-center justify-between gap-1 px-0.5 min-w-0">
-                      <span className="text-[11px] font-medium truncate">{tpl.name}</span>
+                    <span className="relative block">
+                      <ScenePreviewThumb id={tpl.id} />
                       {smartHint ? (
-                        <span className="text-[9.5px] font-mono-num capitalize text-[var(--accent-text)] shrink-0">
+                        <span className="absolute top-1 right-1 px-1.5 h-4 rounded-full bg-black/55 backdrop-blur text-[9px] font-medium capitalize text-[#bfdbfe] inline-flex items-center">
                           {smartHint.transitionType}
                         </span>
-                      ) : idx < 4 ? (
-                        <span className="text-[9.5px] font-mono-num text-[var(--ink-3)] shrink-0">
+                      ) : idx < 9 ? (
+                        <span className="absolute top-1 right-1 w-4 h-4 rounded-[4px] bg-black/45 backdrop-blur text-[9px] font-mono-num text-white/80 grid place-items-center">
                           {idx + 1}
                         </span>
                       ) : null}
-                    </div>
+                      {active && (
+                        <span className="absolute top-1 left-1 px-1.5 h-4 rounded-full bg-[#e11d48] text-[8.5px] font-semibold tracking-wider text-white inline-flex items-center">
+                          LIVE
+                        </span>
+                      )}
+                    </span>
+                    <span className="block text-[11.5px] font-medium leading-tight truncate px-0.5" title={tpl.name}>
+                      {tpl.name}
+                    </span>
                   </button>
                 );
               })}
@@ -868,10 +869,8 @@ export const SceneDeck: React.FC<SceneDeckProps> = ({
                       onMouseLeave={() =>
                         setHoveredSceneId((prev) => (prev === preset.id ? null : prev))
                       }
-                      className={`group relative shrink-0 w-[134px] p-1 rounded-[8px] border flex flex-col justify-between gap-1 text-left transition-all gather-card-hover ${
-                        active
-                          ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--ink)]'
-                          : 'bg-[var(--fill)]/75 hover:bg-[var(--fill-hover)] border-[var(--line)] hover:border-[var(--line-2)] text-[var(--ink-2)] hover:text-[var(--ink)]'
+                      className={`gather-scene-card group relative shrink-0 w-[134px] p-1.5 rounded-[12px] border flex flex-col justify-between gap-1.5 text-left ${
+                        active ? 'is-active text-[var(--ink)]' : 'text-[var(--ink-2)] hover:text-[var(--ink)]'
                       }`}
                     >
                       <button
@@ -1456,7 +1455,7 @@ export const RightRail: React.FC<RightRailProps> = ({
   return (
     <nav
       aria-label="Studio panels"
-      className="hidden lg:flex w-full min-w-0 flex-col items-stretch gap-1 py-2.5 px-1 border-l border-[var(--line)] bg-[var(--bg)]"
+      className="hidden lg:flex w-full min-w-0 flex-col items-stretch gap-1.5 py-3 px-1.5 border-l border-[var(--line)] gather-rail"
     >
       {railItems.map((item) => {
         const active = panelOpen && activeTab === item.id;
@@ -1465,9 +1464,9 @@ export const RightRail: React.FC<RightRailProps> = ({
             key={item.id}
             type="button"
             onClick={() => onSelectTab(item.id)}
-            className={`w-full py-2 px-1 rounded-[7px] flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer ${
+            className={`gather-rail-btn w-full py-2.5 px-1 rounded-[11px] flex flex-col items-center justify-center gap-1 cursor-pointer ${
               active
-                ? 'bg-[var(--accent-soft)] text-[var(--ink)]'
+                ? 'is-active text-[var(--ink)]'
                 : 'text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)]'
             }`}
           >
@@ -1604,12 +1603,12 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     (editMode ? 1 : 0) + (teleprompterOpen ? 1 : 0) + (safeZone916 ? 1 : 0);
 
   const dockBtn =
-    'relative h-9 sm:h-8 px-2 sm:px-2.5 rounded-[7px] inline-flex items-center justify-center gap-1.5 text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
+    'relative h-9 px-2 sm:px-3 rounded-full inline-flex items-center justify-center gap-1.5 text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
 
   return (
-    <footer className="relative shrink-0 h-[56px] sm:h-[52px] border-t border-[var(--line)] bg-[var(--bg-2)]/95 backdrop-blur-md px-1.5 sm:px-4 flex items-center justify-between gap-1 sm:gap-4 pb-[env(safe-area-inset-bottom)]">
+    <footer className="gather-dock relative shrink-0 h-[60px] sm:h-[58px] px-1.5 sm:px-4 flex items-center justify-between gap-1 sm:gap-3 pb-[env(safe-area-inset-bottom)]">
       {/* Zone 1: AV Inputs & Stage Presenting */}
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="gather-dock-group flex items-center gap-0.5 min-w-0">
         <button
           type="button"
           onClick={onToggleMic}
@@ -1713,7 +1712,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       </div>
 
       {/* Zone 2: Core Production & Capture Controls */}
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="gather-dock-group flex items-center gap-0.5 min-w-0">
         <button
           type="button"
           onClick={onToggleMixer}

@@ -1076,6 +1076,162 @@ input[type="range"].gather-range:hover::-webkit-slider-thumb {
   to { opacity: 1; transform: scale(1.04); }
 }
 
+/* ------------------------------------------------------------------------------------
+   Studio surfaces: glass panels floating over the drifting aurora, matching the landing page.
+   ------------------------------------------------------------------------------------ */
+.gather-aurora-soft::before {
+  opacity: 0.7;
+}
+
+:root[data-theme="light"] .gather-aurora-soft::before {
+  opacity: 0.5;
+}
+
+.gather-studio-header,
+.gather-deck,
+.gather-dock,
+.gather-rail,
+.gather-console {
+  background: color-mix(in srgb, var(--bg) 58%, transparent);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+.gather-studio-header {
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 45%, transparent) 30%, color-mix(in srgb, #a78bfa 45%, transparent) 70%, transparent) 1;
+}
+
+.gather-deck {
+  border-top: 1px solid var(--line);
+}
+
+.gather-dock {
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -18px 40px -30px rgba(0, 0, 0, 0.6);
+}
+
+.gather-console {
+  background: color-mix(in srgb, var(--bg-2) 66%, transparent);
+}
+
+/* Pill tabs (deck tabs + transition switcher) */
+.gather-pill-tabs {
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fill) 80%, transparent);
+  border: 1px solid var(--line);
+}
+
+.gather-pill-tab {
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 220ms ease;
+}
+
+.gather-pill-tab:hover {
+  background: var(--fill-hover);
+}
+
+.gather-pill-tab.is-active {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 34%, transparent), color-mix(in srgb, #8b5cf6 26%, transparent));
+  box-shadow: inset 0 0 0 1px var(--accent-line), 0 6px 18px -10px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+.gather-pill-tabs > button[aria-checked="true"],
+.gather-pill-tabs > button.bg-\[var\(--fill-active\)\] {
+  border-radius: 999px;
+}
+
+/* Scene cards */
+.gather-scene-card {
+  background: color-mix(in srgb, var(--fill) 85%, transparent);
+  border-color: var(--line);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease, box-shadow 240ms ease, background-color 200ms ease;
+}
+
+.gather-scene-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--line-2);
+  background: var(--fill-hover);
+  box-shadow: 0 16px 30px -18px rgba(0, 0, 0, 0.7);
+}
+
+.gather-scene-card.is-active {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+    linear-gradient(135deg, #60a5fa, #a78bfa 55%, #22d3ee) border-box;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent), 0 14px 34px -14px color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.gather-sc-pv {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(96, 165, 250, 0.28), transparent 55%),
+    radial-gradient(90% 90% at 100% 100%, rgba(167, 139, 250, 0.28), transparent 60%),
+    linear-gradient(160deg, #0d1733, #121a3d 60%, #1a1745);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+.gather-sc-slot {
+  background: linear-gradient(150deg, rgba(219, 234, 254, 0.92), rgba(165, 180, 252, 0.78));
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.5);
+}
+
+.gather-sc-media {
+  background: linear-gradient(150deg, #22d3ee, #3b82f6);
+  box-shadow: 0 2px 8px -2px rgba(34, 211, 238, 0.6);
+}
+
+.gather-sc-banner {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+/* Right rail */
+.gather-rail-btn {
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 220ms ease, transform 180ms ease;
+}
+
+.gather-rail-btn:hover {
+  transform: translateY(-1px);
+}
+
+.gather-rail-btn.is-active {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, #8b5cf6 22%, transparent));
+  box-shadow: inset 0 0 0 1px var(--accent-line), 0 8px 22px -12px color-mix(in srgb, var(--accent) 85%, transparent);
+}
+
+/* Bottom dock groups */
+.gather-dock-group {
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fill) 80%, transparent);
+  border: 1px solid var(--line);
+}
+
+/* Stage frame: lit like the landing mock-up */
+.gather-stage-frame,
+.gather-stage-frame-vertical {
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 30px 80px -30px rgba(0, 0, 0, 0.85),
+    0 0 60px -20px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+:root[data-theme="light"] .gather-studio-header,
+:root[data-theme="light"] .gather-deck,
+:root[data-theme="light"] .gather-dock,
+:root[data-theme="light"] .gather-rail,
+:root[data-theme="light"] .gather-console {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+:root[data-theme="light"] .gather-scene-card.is-active {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, #3b82f6, #8b5cf6 55%, #06b6d4) border-box;
+}
+
 /* Landing mock-up: follow light theme for the window chrome, keep the "video" dark. */
 :root[data-theme="light"] .gather-mock [class*="bg-[#0"]:not(.mock-video, .mock-video *) {
   background-color: rgba(255, 255, 255, 0.82);
