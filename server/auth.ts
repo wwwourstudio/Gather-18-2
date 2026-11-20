@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getApp, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,11 +23,23 @@ function getFirebaseProjectId(): string | null {
   return null;
 }
 
-function getAdminAuth() {
+// firebase-admin is imported lazily: its auth module pulls in jwks-rsa, which require()s an
+// ESM-only package and crashes some serverless runtimes at cold start. Loading it on first
+// use keeps every other /api route working even where token verification is unavailable.
+async function getAdminAuth() {
   const projectId = getFirebaseProjectId();
   if (!projectId) return null;
-  const app = getApps().length ? getApp() : initializeApp({ projectId });
-  return getAuth(app);
+  try {
+    const [{ getApp, getApps, initializeApp }, { getAuth }] = await Promise.all([
+      import('firebase-admin/app'),
+      import('firebase-admin/auth'),
+    ]);
+    const app = getApps().length ? getApp() : initializeApp({ projectId });
+    return getAuth(app);
+  } catch (err) {
+    console.warn('firebase-admin unavailable; ID tokens will not be verified.', err);
+    return null;
+  }
 }
 
 export interface VerifiedTokenIdentity {
@@ -46,7 +56,7 @@ export async function verifyFirebaseIdToken(
   token: string | undefined | null
 ): Promise<VerifiedTokenIdentity | null> {
   if (!token || typeof token !== 'string' || token.length < 20) return null;
-  const adminAuth = getAdminAuth();
+  const adminAuth = await getAdminAuth();
   if (!adminAuth) return null;
   try {
     const decoded = await adminAuth.verifyIdToken(token);
