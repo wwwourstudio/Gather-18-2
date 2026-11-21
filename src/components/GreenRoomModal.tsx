@@ -68,6 +68,8 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
   isNewStudio,
 }) => {
   const [name, setName] = useState(initialName || '');
+  const [nameError, setNameError] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [studioTitle, setStudioTitle] = useState(DEFAULT_TITLES[initialWatchMode]);
   const [titleEdited, setTitleEdited] = useState(false);
   const [watchMode, setWatchMode] = useState<WatchMode>(initialWatchMode);
@@ -217,7 +219,16 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trimmedName) return;
+    if (!trimmedName) {
+      // Point at what's missing instead of silently doing nothing.
+      setNameError(true);
+      const input = nameInputRef.current;
+      if (input) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus({ preventScroll: true });
+      }
+      return;
+    }
     onEnter({
       name: trimmedName,
       avatarUrl,
@@ -347,7 +358,7 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
           </div>
         </header>
 
-        <form onSubmit={handleJoin} className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden gather-scroll">
+        <form onSubmit={handleJoin} noValidate className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden gather-scroll">
           {/* Left: preview + look */}
           <div className="lg:w-[58%] p-5 sm:p-6 space-y-4 min-w-0 lg:overflow-y-auto gather-scroll">
             <div className="gather-glow-rim relative aspect-video rounded-[16px] overflow-hidden bg-[#060a14] shadow-[0_28px_70px_-24px_rgba(0,0,0,0.75)]">
@@ -745,17 +756,30 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
                       Display name
                     </label>
                     <input
+                      ref={nameInputRef}
                       id="greenroom-display-name"
                       type="text"
                       required
+                      aria-invalid={nameError}
+                      aria-describedby={nameError ? 'greenroom-name-error' : undefined}
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (nameError && e.target.value.trim()) setNameError(false);
+                      }}
                       placeholder="How guests will see you"
                       autoComplete="name"
                       autoFocus={!initialName && typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches}
                       maxLength={40}
-                      className={inputCls}
+                      className={`${inputCls} ${
+                        nameError ? '!border-[var(--warn)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--warn)_18%,transparent)]' : ''
+                      }`}
                     />
+                    {nameError && (
+                      <p id="greenroom-name-error" role="alert" className="text-[12px] text-[var(--warn)]">
+                        Add your name so guests know who you are.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[12px]">
@@ -810,7 +834,6 @@ export const GreenRoomModal: React.FC<GreenRoomModalProps> = ({
               </ul>
               <button
                 type="submit"
-                disabled={!trimmedName}
                 className="group w-full h-12 rounded-[12px] gather-btn-primary text-[14px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
               >
                 <span>{isNewStudio ? 'Open my studio' : 'Join now'}</span>

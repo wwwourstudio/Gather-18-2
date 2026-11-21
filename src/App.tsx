@@ -2210,7 +2210,7 @@ export default function App() {
             >
               {/* Left Column: Stage Viewport + Hairline-Divided Scene Deck */}
               <div className="min-w-0 lg:min-h-0 grid grid-rows-[auto_auto] lg:grid-rows-[minmax(0,1fr)_auto] gap-0 relative">
-                <div className="relative lg:min-h-0 flex flex-col gap-2.5 bg-[var(--bg-2)]/60 dark:bg-[#03060e]/70 px-4 py-3 sm:px-6 sm:py-4">
+                <div className="relative lg:min-h-0 flex flex-col gap-2.5 bg-transparent px-4 py-3 sm:px-6 sm:py-4">
                   {/* Eye-Line Host-Only Teleprompter (Docked cleanly above stage, zero video overlap) */}
                   <TeleprompterOverlay
                     visible={teleprompterOpen}
@@ -2569,7 +2569,7 @@ export default function App() {
                 </div>
 
                 {/* Compact Mobile Tab Bar */}
-                <div className="flex lg:hidden items-center gap-1 p-1 rounded-[8px] gather-glass overflow-x-auto">
+                <div className="flex lg:hidden items-center gap-0.5 mx-3 my-2 gather-pill-tabs overflow-x-auto">
                   {(
                     [
                       { id: 'chat', label: 'Chat' },
@@ -2586,9 +2586,9 @@ export default function App() {
                         setConsoleTab(t.id);
                         setPanelOpen(true);
                       }}
-                      className={`flex-1 h-8 px-2.5 rounded-[6px] text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer ${
+                      className={`gather-pill-tab flex-1 h-8 px-3 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer ${
                         panelOpen && consoleTab === t.id
-                          ? 'bg-[var(--surface-2)] text-[var(--ink)]'
+                          ? 'is-active text-[var(--ink)]'
                           : 'text-[var(--ink-3)]'
                       }`}
                     >
@@ -2599,7 +2599,7 @@ export default function App() {
               </div>
 
               {/* Middle Column: Fluid Percentage Side Console + Hairline Resize Handle */}
-              <div className={panelOpen ? 'relative h-[72vh] lg:h-auto min-h-0 flex w-full border-t lg:border-t-0 lg:border-l border-[var(--line)] bg-[var(--bg-2)]/80' : 'hidden'}>
+              <div className={panelOpen ? 'relative h-[72vh] lg:h-auto min-h-0 flex w-full border-t lg:border-t-0 lg:border-l border-[var(--line)] gather-console' : 'hidden'}>
                 <div
                   role="separator"
                   aria-orientation="vertical"

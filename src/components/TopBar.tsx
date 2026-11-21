@@ -452,7 +452,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     'inline-flex items-center justify-center gap-1.5 h-8 px-2.5 rounded-[7px] text-[12.5px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--fill-hover)] whitespace-nowrap shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]';
 
   return (
-    <header className="h-12 shrink-0 flex items-center justify-between gap-2 sm:gap-6 px-2.5 sm:px-4 border-b border-[var(--line)] bg-[var(--bg)]/90 backdrop-blur-md relative z-40">
+    <header className="gather-studio-header h-14 shrink-0 flex items-center justify-between gap-2 sm:gap-6 px-2.5 sm:px-4 relative z-40">
       {/* Zone 1 + 2: Wordmark + Clean Breadcrumb */}
       <div className="flex items-center gap-4 min-w-0">
         <button
